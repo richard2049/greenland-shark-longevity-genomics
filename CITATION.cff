@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this repository, please cite it using the metadata below."
+title: "Greenland Shark Longevity Genomics"
+type: software
+authors:
+  - family-names: "Marín Bautista"
+    given-names: "Ricardo"
+version: "0.1.0"
+date-released: "2026-06-20"
+repository-code: "https://github.com/richard2049/greenland-shark-longevity-genomics"
+url: "https://github.com/richard2049/greenland-shark-longevity-genomics"
+license: MIT
+abstract: >-
+  Reproducible workflow for conservative Greenland shark longevity genomics
+  analysis using public genome assemblies, annotations, candidate gene panels,
+  comparative orthology, locus-level validation, repeat-context review,
+  retina RNA-seq support, integrated evidence scoring, and traceable reporting.
+keywords:
+  - Greenland shark
+  - Somniosus microcephalus
+  - longevity genomics
+  - comparative genomics
+  - computational biology
+  - bioinformatics workflow
+  - reproducible research
+  - evidence scoring

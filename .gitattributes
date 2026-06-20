@@ -1,4 +1,5 @@
 * text=auto
+.gitattributes text eol=lf
 
 # Keep code, workflow files, configs, docs, and scientific tabular/FASTA
 # fixtures stable across Windows, Linux, Docker, and WSL.
@@ -8,6 +9,7 @@ Snakefile text eol=lf
 *.md text eol=lf
 *.yaml text eol=lf
 *.yml text eol=lf
+*.cff text eol=lf
 *.toml text eol=lf
 *.tsv text eol=lf
 *.fa text eol=lf
@@ -16,6 +18,7 @@ Snakefile text eol=lf
 *.fasta text eol=lf
 *.gff text eol=lf
 *.gtf text eol=lf
+LICENSE text eol=lf
 
 # Windows launchers are intentionally Windows-native.
 *.cmd text eol=crlf

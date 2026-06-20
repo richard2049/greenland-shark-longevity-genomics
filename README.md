@@ -758,3 +758,9 @@ src/         Small reusable Python modules and CLIs
 tests/       Lightweight pytest coverage
 workflow/    Snakemake entry point
 ```
+
+## License And Citation
+
+The repository code and documentation are released under the MIT License; see `LICENSE`.
+
+If you use this workflow or adapt its reporting structure, cite the repository using `CITATION.cff`. Public biological datasets referenced by the workflow retain their original database, publication, and provider terms.

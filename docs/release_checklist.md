@@ -84,4 +84,6 @@ python -m pytest -q --basetemp .tmp/pytest_release_full
 
 - [ ] Read the final report once as a skeptical reviewer and check every biological statement against a supporting TSV or claim-register row.
 - [ ] Confirm the README quickstart and runbook commands are synchronized.
+- [ ] Confirm `LICENSE` is present and matches the intended public software license.
+- [ ] Confirm `CITATION.cff` has the intended author name, repository URL, version, and release date.
 - [ ] Confirm the repository does not require private data, hardcoded local absolute paths, or undocumented manual files for the default/demo workflow.
