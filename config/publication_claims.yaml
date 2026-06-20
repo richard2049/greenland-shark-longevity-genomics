@@ -1,0 +1,53 @@
+metadata:
+  schema_version: "1.0"
+  note: Published findings are registered as claims to audit. They are not repository-supported biological findings until reproduced from local evidence.
+
+claims:
+  - claim_id: PNAS_YANG_2026_RESOURCE_ASSEMBLY
+    publication_id: YANG_PNAS_2026
+    title: "The Greenland shark genome: insights into lifespan extremes and population dynamics"
+    doi: 10.1073/pnas.2601272123
+    resource_id: SMIC_TOKYO_GENOME_2025
+    mechanism: Resource quality and provenance
+    gene_or_feature: GCA_056099535.1_ASM5609953v1
+    reported_signal: PNAS/University of Tokyo reports a high-quality Greenland shark genome resource for lifespan and population analyses.
+    required_evidence: [assembly_stats, assembly_report, genome_fasta_checksum]
+    current_repo_status: PARTIALLY_REPRODUCED_RESOURCE_QC
+    interpretation_guardrail: Assembly quality supports downstream feasibility only; it is not biological evidence for longevity mechanisms.
+    next_validation: Download and checksum the genome FASTA before sequence-level analyses.
+  - claim_id: PNAS_YANG_2026_LINKER_HISTONE
+    publication_id: YANG_PNAS_2026
+    title: "The Greenland shark genome: insights into lifespan extremes and population dynamics"
+    doi: 10.1073/pnas.2601272123
+    resource_id: SMIC_TOKYO_GENOME_2025
+    mechanism: Chromatin and epigenome-related regulation
+    gene_or_feature: H1F0/linker histone H1.0
+    reported_signal: Published report describes Greenland-shark-specific amino-acid substitutions in a linker histone protein and proposes a chromatin-stability hypothesis.
+    required_evidence: [genome_wide_protein_set, orthology, multiple_sequence_alignment, positive_selection_model, domain_or_region_context]
+    current_repo_status: NOT_ASSESSED
+    interpretation_guardrail: Do not infer enhanced chromatin stability from sequence reporting alone; treat as a hypothesis until alignment/model evidence is reproduced.
+    next_validation: Use the manually downloaded Figshare protein FASTA and GFF to identify H1F0/linker-histone candidates, then reproduce orthology, alignment, model, and region-context checks.
+  - claim_id: PNAS_YANG_2026_FTH1B_COPY_NUMBER
+    publication_id: YANG_PNAS_2026
+    title: "The Greenland shark genome: insights into lifespan extremes and population dynamics"
+    doi: 10.1073/pnas.2601272123
+    resource_id: SMIC_TOKYO_GENOME_2025
+    mechanism: Ferroptosis, iron handling, and oxidative stress
+    gene_or_feature: FTH1B/ferritin heavy chain 1b
+    reported_signal: Published report describes increased FTH1b copy number in Greenland shark.
+    required_evidence: [genome_wide_protein_set, annotation_coordinates, orthology, domain_integrity, isoform_filtering, separable_loci]
+    current_repo_status: NOT_ASSESSED
+    interpretation_guardrail: Do not equate copy-number increase with functional advantage; first separate true loci from isoforms, fragments, and assembly artifacts.
+    next_validation: Use the manually downloaded Figshare protein FASTA and GFF to audit FTH1B candidates for orthology, domains, isoforms, separable loci, and cross-resource support.
+  - claim_id: PNAS_YANG_2026_POPULATION_DYNAMICS
+    publication_id: YANG_PNAS_2026
+    title: "The Greenland shark genome: insights into lifespan extremes and population dynamics"
+    doi: 10.1073/pnas.2601272123
+    resource_id: SMIC_TOKYO_GENOME_2025
+    mechanism: Population history
+    gene_or_feature: whole-genome population signal
+    reported_signal: Published report includes population-dynamics analysis.
+    required_evidence: [raw_reads_or_variant_calls, sample_metadata, variant_filtering, demographic_model_specification]
+    current_repo_status: NOT_IN_MVP_SCOPE
+    interpretation_guardrail: Population history is out of the current longevity-mechanism MVP and requires separate sampling and model validation.
+    next_validation: Register exact sample accessions and processed variant resources before any population-genomics workflow is added.

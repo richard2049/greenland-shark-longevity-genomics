@@ -1,0 +1,11 @@
+mechanism	candidate_count	tier1_count	tier2_count	tier3_count	artifact_uncertain_count	robust_ready_count	plausible_lead_count	exploratory_count	artifact_prone_count	expression_supported_count	repeat_context_caveat_count	locus_review_required_count	required_validation
+Antioxidant response	3	0	2	0	1	0	2	0	1	3	0	0	Use row-level Phase 8b audit entries before making mechanism-level interpretations.
+Chromatin and epigenome-related regulation	3	0	3	0	0	0	3	0	1	2	0	1	Use row-level Phase 8b audit entries before making mechanism-level interpretations.
+DNA repair/genome stability	5	0	5	0	0	0	5	0	1	4	1	1	Use row-level Phase 8b audit entries before making mechanism-level interpretations.
+Ferroptosis, iron handling, and oxidative stress	4	0	3	0	1	0	3	0	2	2	1	1	Use row-level Phase 8b audit entries before making mechanism-level interpretations.
+Immune and inflammatory regulation	4	0	1	0	3	0	1	0	3	1	0	0	Use row-level Phase 8b audit entries before making mechanism-level interpretations.
+Mitochondrial biology and metabolism	3	0	2	0	1	0	2	0	1	2	0	0	Use row-level Phase 8b audit entries before making mechanism-level interpretations.
+Proteostasis and autophagy	4	0	3	0	1	0	3	0	1	3	0	0	Use row-level Phase 8b audit entries before making mechanism-level interpretations.
+Telomere-related biology	7	0	7	0	0	0	7	0	0	5	0	0	Use row-level Phase 8b audit entries before making mechanism-level interpretations.
+Tissue-specific preservation	4	0	2	0	2	0	2	0	2	2	0	0	Use row-level Phase 8b audit entries before making mechanism-level interpretations.
+p53 pathway	4	0	3	0	1	0	3	0	1	3	1	1	Use row-level Phase 8b audit entries before making mechanism-level interpretations.

@@ -1,0 +1,8 @@
+check_id	readiness_area	item	status	evidence	required_action
+PHASE9-READY-001	large_file_hygiene	Raw and intermediate data directories are ignored	PASS	.gitignore excludes data/raw/, data/interim/, and .snakemake/.	Keep large raw data and workflow caches out of Git.
+PHASE9-READY-002	large_file_hygiene	Large sequencing file extensions are ignored	PASS	.gitignore excludes common large sequencing files.	Add missing large-file patterns before public release.
+PHASE9-READY-003	release_artifacts	Final report and figures are outside ignored generated-report path	PASS	reports/final/ and reports/figures/ are not globally ignored.	Commit final report/figures only if they are intended release artifacts and small enough for Git.
+PHASE9-READY-004	release_artifacts	Selected final result TSVs are unignored by exact exception	PASS	Most result outputs remain ignored, while the selected final evidence/reporting TSV release bundle is unignored by exact .gitignore exceptions.	Keep the release bundle narrow. If this check warns, add parent-directory and exact-file .gitignore exceptions for only the selected small TSVs.
+PHASE9-READY-005	reproducibility	Environment and runbook are present	PASS	environment.yml and docs/runbook.md are present.	Keep direct refresh commands and environment requirements synchronized.
+PHASE9-READY-006	scientific_traceability	Claims register and study design are present	PASS	docs/claims_register.md and docs/study_design.md are present.	Do not release final report without claim traceability documents.
+PHASE9-READY-007	validation	Phase 9 report-generation and package-audit tests are present	PASS	tests/test_phase9_report_generation.py and tests/test_phase9_package_audit.py are present.	Run focused and full tests before public release.

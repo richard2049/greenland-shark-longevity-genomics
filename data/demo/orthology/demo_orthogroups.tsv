@@ -1,0 +1,8 @@
+orthogroup_id	species_id	gene_ids
+OG0001	smic	demo_SMIC_TP53_1,demo_SMIC_TP53_2
+OG0001	cmil	demo_CMIL_TP53_1
+OG0002	smic	demo_SMIC_ERCC1_1
+OG0002	cmil	demo_CMIL_ERCC1_1
+OG0003	smic	demo_SMIC_ERCC4_frag
+OG0003	cmil	demo_CMIL_ERCC4_1
+

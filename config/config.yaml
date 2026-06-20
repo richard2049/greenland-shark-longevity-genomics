@@ -1,0 +1,1136 @@
+workflow_mode: demo
+
+paths:
+  metadata_dir: data/metadata
+  results_dir: results
+  reports_dir: reports/generated
+  logs_dir: logs
+
+analysis_switches:
+  run_metadata: true
+  run_demo_qc: true
+  run_candidate_integration: true
+  run_evidence_scoring: true
+  run_report: true
+  run_busco: false
+  run_orthofinder: false
+  run_repeat_analysis: false
+  run_rnaseq: false
+  download_large_genome_fastas: false
+
+tool_parameters:
+  fasta:
+    ambiguous_protein_residues: ["B", "J", "O", "U", "X", "Z"]
+  evidence:
+    allowed_tiers: ["Tier 1", "Tier 2", "Tier 3", "Artifact/uncertain"]
+
+orthofinder:
+  executable: orthofinder
+  input_dir: data/interim/orthofinder_input
+  output_dir: results/orthofinder
+  minimum_species: 2
+  threads: 2
+  run_when_ready: false
+  algorithm_choice: OrthoFinder 2.5.5 is the selected orthology engine because it infers genome-wide orthogroups from protein FASTA files and is appropriate for multi-species copy-number screening. Default DIAMOND-based sequence search is preferred over BLAST for this first chondrichthyan set because it is much faster at proteome scale while remaining suitable for orthogroup inference.
+  notes: OrthoFinder is not run in reference_only mode. Use workflow_mode=orthology after the OrthoFinder binary is available, preferably through the Linux/WSL orthology environment.
+
+candidate_validation:
+  high_priority_rescue_genes: [H1F0, FTH1B, TP53, RAD51]
+  representative_selection: longest_protein_isoform_per_locus
+  domain_check_status: prepare_targets_only
+  recommended_domain_methods: InterProScan or HMMER/Pfam with recorded database versions, e-values, and domain coverage.
+  rescue_strategy: Reciprocal protein similarity searches first; protein-to-genome alignment only when local genome FASTA and validated query proteins are available.
+  notes: This step performs isoform/locus audit and prepares domain/rescue targets. It does not infer domain integrity or gene absence.
+
+domain_validation:
+  method: HMMER/Pfam first-pass candidate protein domain validation
+  backend: pyhmmer
+  pyhmmer_version: 0.12.1
+  hmmer_executable: hmmscan
+  pfam_hmm: data/raw/references/PFAM/Pfam-A.hmm
+  pfam_hmm_gz: data/raw/references/PFAM/Pfam-A.hmm.gz
+  pfam_url: https://ftp.ebi.ac.uk/pub/databases/Pfam/current_release/Pfam-A.hmm.gz
+  pfam_relnotes: data/raw/references/PFAM/relnotes.txt
+  pfam_release: "38.1"
+  pfam_retrieval_date: "2026-05-29"
+  pfam_hmm_gz_sha256: D3D30C8E6801BFEDECF783408ECC98916F8F1DDA8974C6E51036FCBDD765F591
+  pfam_hmm_sha256: A78A42D6FAF265B6BFCA59E8F062D06FAE6083CE2C6E335D7B381F20B82B7903
+  threads: 4
+  use_cut_ga: true
+  max_i_evalue: 1.0e-5
+  min_partial_hmm_coverage: 0.20
+  min_full_hmm_coverage: 0.70
+  recommended_command: pyhmmer hmmscan-compatible scan of data/interim/candidate_validation/representative_candidate_proteins.faa against data/raw/references/PFAM/Pfam-A.hmm; equivalent command-line route is hmmscan --cpu 4 --cut_ga --domtblout results/domains/representative_candidate_proteins.pfam.domtblout --noali data/raw/references/PFAM/Pfam-A.hmm data/interim/candidate_validation/representative_candidate_proteins.faa
+  interpretation_notes: DOMAIN_SUPPORTED means at least one qualifying Pfam domain is detected in a representative candidate protein. PARTIAL_DOMAIN means a significant Pfam hit is detected but does not meet full-domain coverage. NO_EXPECTED_DOMAIN_DETECTED is domain evidence uncertainty, not gene absence or loss. InterProScan can be added later as broader independent annotation support.
+
+phase4_annotation_rescue:
+  method: targeted reciprocal protein similarity rescue for unresolved high-priority candidates
+  backend: pyhmmer_phmmer
+  high_priority_genes: [H1F0, FTH1B, TP53, RAD51]
+  threads: 4
+  max_evalue: 1.0e-5
+  min_query_coverage: 0.40
+  min_target_coverage: 0.40
+  max_queries_per_gene_per_species: 3
+  max_forward_hits_per_query: 5
+  interpretation_notes: Protein-level rescue candidates are not final gene annotations. They identify focal protein models that require domain review, isoform/locus inspection, and protein-to-genome alignment when genome FASTA is available. Do not infer gene absence from failure to rescue.
+  query_patterns:
+    H1F0:
+      include: ["histone h1.0", "histone h1.0-like", "histone h1.0-b-like"]
+      exclude: ["h1.01", "h1.10", "h1.1", "h1.2", "h1.3", "h1.4", "h1.5"]
+    FTH1B:
+      include: ["ferritin heavy chain b", "ferritin heavy chain b-like"]
+      exclude: ["light chain", "middle subunit", "lower subunit", "oocyte"]
+    TP53:
+      include: ["cellular tumor antigen p53"]
+      exclude: ["binding protein", "inducible", "regulated", "tp53rk", "p53 response", "p53-target"]
+    RAD51:
+      include: ["dna repair protein rad51 homolog 1"]
+      exclude: ["homolog 2", "homolog 3", "homolog 4", "associated"]
+
+phase4b_genome_validation:
+  method: targeted protein-to-genome validation for Phase 4 rescue candidates
+  backend: miniprot_gff
+  genome_fasta: data/raw/references/SMIC_TOKYO_GENOME_2025/GCA_056099535.1_ASM5609953v1_genomic.fna.gz
+  genome_scope: candidate_scaffolds
+  miniprot_executable: tools/miniprot-docker.cmd
+  threads: 2
+  fail_if_missing_inputs: false
+  include_comparator_queries_for_genes_with_protein_rescue: false
+  min_query_coverage_for_intact_candidate: 0.70
+  min_query_coverage_for_partial_candidate: 0.20
+  extra_miniprot_args: []
+  recommended_command: tools/miniprot-docker.cmd -t 2 --gff data/interim/annotation_rescue/phase4b_target_scaffolds.fna data/interim/annotation_rescue/phase4b_miniprot_queries.faa > results/rescue/phase4b_miniprot_raw.gff
+  interpretation_notes: Phase 4b validates whether rescued or unresolved candidate proteins align to the target genome with interpretable coordinates. The current laptop profile uses candidate_scaffolds mode, extracting scaffolds that already contain protein-level rescue candidates to avoid full-genome Docker memory failure. Genes without candidate regions, such as unresolved TP53, remain not assessable in this limited-scope run. High-coverage miniprot alignments are candidate genome support only and still require manual exon/locus/domain review. Failure to align must not be interpreted as gene absence.
+
+phase4c_locus_review:
+  method: structured locus review and targeted TP53 genome search
+  review_genes: [H1F0, FTH1B, RAD51]
+  min_overlap_fraction_for_same_locus: 0.50
+  tp53_genome_fasta: data/raw/references/SMIC_TOKYO_GENOME_2025/GCA_056099535.1_ASM5609953v1_genomic.fna.gz
+  miniprot_executable: tools/miniprot-docker.cmd
+  threads: 2
+  tp53_max_chunk_bases: 250000000
+  tp53_work_chunk_fasta: data/interim/annotation_rescue/tp53_active_chunk.fna
+  tp53_work_chunk_gff: data/interim/annotation_rescue/tp53_active_chunk.gff
+  tp53_work_chunk_stderr: data/interim/annotation_rescue/tp53_active_chunk.stderr.log
+  interpretation_notes: Phase 4c inspects candidate miniprot loci, rescued-query Pfam support, overlap among candidate loci, and local coordinates. TP53 is searched separately with the available comparator query against scaffolds selected from Phase 4 forward-hit coordinates, because a blind full-genome chunked pass was unstable on this laptop. No Phase 4c output is a final duplication, absence, inactivation, or mechanism claim without manual review and cross-resource support.
+
+phase4d_consolidation:
+  method: conservative consolidation of Phase 4 rescue, domain, locus, and targeted TP53 outputs
+  integrated_output: results/evidence/integrated_evidence.tsv
+  detailed_output: results/evidence/phase4d_candidate_interpretation.tsv
+  base_evidence_snapshot: results/evidence/phase3_integrated_evidence.tsv
+  high_priority_genes: [H1F0, FTH1B, TP53, RAD51]
+  tiering_policy: Candidate loci with high-coverage miniprot support and Pfam domain support are Tier 2 candidate-locus evidence, not validated duplication or functional evidence. TP53 targeted-search results remain Artifact/uncertain until manually reviewed and replicated with additional queries/resources.
+  interpretation_notes: Phase 4d updates the integrated evidence table with conservative high-priority candidate interpretations. It separates resource and validation observations from biological mechanism claims and preserves copy-number, loss, pathway activity, adaptation, and translational relevance as not assessed unless future validation supports them.
+
+phase4e_locus_hardening:
+  method: manual-review hardening of high-priority candidate loci from Phase 4c/4d outputs
+  locus_output: results/rescue/phase4e_locus_manual_review.tsv
+  summary_output: results/rescue/phase4e_gene_hardened_summary.tsv
+  evidence_output: results/evidence/phase4e_hardened_evidence.tsv
+  high_priority_genes: [H1F0, FTH1B, TP53, RAD51]
+  annotation_gff: data/raw/references/SMIC_TOKYO_GENOME_2025/figshare_annotation/greenland shark annotation/complete.genomic.gff
+  interpretation_notes: Phase 4e parses existing miniprot/Pfam/locus outputs against the local Figshare annotation GFF to record exact/focal annotation overlap, product-consistent family overlap, candidate-locus spacing, and artifact flags. This is still validation hardening, not proof of duplication, gene function, pathway activity, adaptation, loss, or translational relevance.
+
+phase5_repeat_context:
+  method: limited candidate-locus repeat/transposon context using existing repeat annotations only
+  candidate_loci: results/rescue/phase4e_locus_manual_review.tsv
+  figshare_inventory: data/metadata/figshare_annotation_inventory.tsv
+  assembly_report: data/raw/references/SMIC_TOKYO_GENOME_2025/GCA_056099535.1_ASM5609953v1_assembly_report.txt
+  resource_status_output: data/metadata/phase5_repeat_resource_status.tsv
+  repeat_features_output: results/repeats/phase5_repeat_features.tsv
+  locus_context_output: results/repeats/phase5_candidate_locus_repeat_context.tsv
+  gene_summary_output: results/repeats/phase5_gene_repeat_context_summary.tsv
+  candidate_window_bp: 10000
+  filter_to_candidate_windows: true
+  sequence_alias_policy: normalize_repeatmasker_genbank_accessions_to_assembly_report_sequence_names
+  repeat_annotation_candidates:
+    - results/repeats/phase5b/smic_tokyo.repeatmasker.out.gff
+  loci_of_interest:
+    FTH1B: scaffold_33 ferritin-family candidate cluster from Phase 4e
+    H1F0: scaffold_33 linker-histone candidate loci from Phase 4e
+    RAD51: scaffold_12 RAD51-family candidate loci from Phase 4e
+    TP53: scaffold_247 targeted p53-family candidate locus from Phase 4e
+  interpretation_notes: Phase 5 is limited to interval context around Phase 4e candidate loci. It does not run RepeatMasker, RepeatModeler, or de novo repeat discovery. The current configured repeat source is the externally generated Phase 5b RepeatMasker GFF, filtered to candidate windows and interpreted only as artifact/context evidence.
+
+phase5_evidence_integration:
+  method: integrate Phase 5 repeat context into evidence as artifact risk only
+  base_evidence: results/evidence/phase4d_integrated_evidence.tsv
+  phase4e_evidence: results/evidence/phase4e_hardened_evidence.tsv
+  phase5_gene_summary: results/repeats/phase5_gene_repeat_context_summary.tsv
+  phase5c_gene_qc: results/repeats/phase5c_gene_repeat_qc_summary.tsv
+  phase5_evidence_output: results/evidence/phase5_repeat_context_evidence.tsv
+  integrated_output: results/evidence/integrated_evidence.tsv
+  report_output: reports/generated/phase5_repeat_context_report.md
+  tiering_policy: Phase 5 repeat context must not upgrade evidence tiers. It may only preserve or increase artifact-risk caveats for candidate loci with local repeat overlap or repeat-context uncertainty.
+  interpretation_notes: Repeat overlap around candidate loci is recorded as artifact/context evidence only, especially for FTH1B, RAD51, and TP53. It does not support repeat-mediated duplication, mechanism, adaptation, pathway activity, causation, or longevity interpretation.
+
+phase5c_repeat_qc:
+  method: repeat-context QC hardening using RepeatMasker GFF and .out concordance around Phase 4e candidate windows
+  phase5_locus_context: results/repeats/phase5_candidate_locus_repeat_context.tsv
+  phase5b_inventory: data/metadata/phase5b_repeat_output_inventory.tsv
+  integrity_output: results/repeats/phase5c_repeatmasker_integrity.tsv
+  locus_qc_output: results/repeats/phase5c_locus_repeat_qc.tsv
+  gene_qc_output: results/repeats/phase5c_gene_repeat_qc_summary.tsv
+  report_output: reports/generated/phase5c_repeat_context_qc_report.md
+  log_files:
+    - logs/phase5b_repeatmasker.stdout.log
+    - logs/phase5b_repeatmasker.stderr.log
+    - logs/phase5b_repeatmodeler_volume.stdout.log
+  high_overlap_fraction_for_artifact_risk: 0.50
+  interpretation_notes: Phase 5c streams the RepeatMasker .out file through candidate windows, compares overlap calls with the GFF-derived Phase 5 table, records missing .tbl and signal-9 warnings, and keeps all repeat context as artifact/QC evidence only.
+
+phase5b_repeat_annotation:
+  method: optional de novo repeat annotation followed by Phase 5 candidate-locus reanalysis
+  status: optional_heavy_external_workflow_not_default
+  genome_fasta: data/raw/references/SMIC_TOKYO_GENOME_2025/GCA_056099535.1_ASM5609953v1_genomic.fna.gz
+  work_dir: data/interim/repeats/phase5b
+  output_dir: results/repeats/phase5b
+  repeatmasker_output_dir: results/repeats/phase5b/repeatmasker_raw
+  staged_genome_fasta: data/interim/repeats/phase5b/smic_tokyo_genome.fna
+  database_name: smic_tokyo
+  species_label: Somniosus_microcephalus
+  container_strategy: Docker desktop-linux or WSL/Linux; do not run heavy repeat annotation through native Windows Snakemake.
+  container_image: dfam/tetools:latest
+  container_resolved_digest: sha256:d5e5fb526a44a8fc907698425d08e5a9c3d608e5eb6ff668737655fd4c6db734
+  container_verified_at: "2026-06-08"
+  container_pin_status: EXPLORATORY_LATEST_IMAGE_RESOLVED_DIGEST_RECORDED
+  builddatabase_executable: /opt/RepeatModeler/BuildDatabase
+  repeatmodeler_executable: /opt/RepeatModeler/RepeatModeler
+  repeatmasker_executable: /opt/RepeatMasker/RepeatMasker
+  repeatmodeler_version: 2.0.8
+  repeatmasker_version: 4.2.3
+  threads: 8
+  run_repeatmodeler: manual_external
+  run_repeatmasker: manual_external
+  repeatmasker_database: TODO_RECORD_DFAM_OR_CONTAINER_DATABASE_VERSION
+  custom_library: results/repeats/phase5b/smic_tokyo-families.fa
+  repeatmasker_gff: results/repeats/phase5b/smic_tokyo.repeatmasker.out.gff
+  repeatmasker_out: results/repeats/phase5b/smic_tokyo.repeatmasker.out
+  repeatmasker_tbl: results/repeats/phase5b/smic_tokyo.repeatmasker.tbl
+  preflight_output: results/repeats/phase5b_repeat_annotation_preflight.tsv
+  plan_output: results/repeats/phase5b_repeat_annotation_plan.tsv
+  provenance_output: data/metadata/phase5b_repeat_annotation_provenance.tsv
+  output_inventory: data/metadata/phase5b_repeat_output_inventory.tsv
+  interpretation_notes: Phase 5b is optional and heavy. It should generate versioned repeat annotations for artifact/context review only. Repeat overlap near candidate loci must not be interpreted as causal, adaptive, functional, or longevity evidence without independent validation.
+
+phase6_telomere:
+  method: telomere motif and telomere-gene readiness layer
+  genome_fasta: data/raw/references/SMIC_TOKYO_GENOME_2025/GCA_056099535.1_ASM5609953v1_genomic.fna.gz
+  resource_id: SMIC_TOKYO_GENOME_2025
+  motifs: [TTAGGG, CCCTAA]
+  canonical_motif: TTAGGG
+  reverse_complement_motif: CCCTAA
+  terminal_window_bp: 10000
+  min_sequence_length_bp: 1000
+  candidate_panel: config/candidate_panels.yaml
+  candidate_copy_number: results/orthology/candidate_copy_number.tsv
+  candidate_duplication_audit: results/orthology/candidate_duplication_audit.tsv
+  integrated_evidence: results/evidence/integrated_evidence.tsv
+  motif_scan_output: results/telomere/phase6_telomeric_motif_scan.tsv
+  scaffold_end_enrichment_output: results/telomere/phase6_scaffold_end_enrichment.tsv
+  telomere_gene_audit_output: results/telomere/phase6_telomere_gene_audit.tsv
+  report_output: reports/generated/phase6_telomere_report.md
+  interpretation_notes: Phase 6 searches exact canonical telomeric motifs near scaffold ends and audits telomere/shelterin candidate genes using existing orthology/evidence tables. It must not infer telomere length, telomerase activity, rejuvenation, pathway activity, gene absence, or longevity mechanism.
+
+phase7_rnaseq:
+  method: RNA-seq metadata and expression-readiness layer
+  resource_id: SMIC_RETINA_PRJNA1246101_2026
+  bioproject: PRJNA1246101
+  sra_study: SRP576249
+  source_url: https://www.ncbi.nlm.nih.gov/sra?from_uid=1246101&linkname=bioproject_sra_all
+  runinfo_url: https://trace.ncbi.nlm.nih.gov/Traces/sra-db-be/runinfo?acc=PRJNA1246101
+  retrieval_date: "2026-06-12"
+  raw_read_local_dir: data/raw/rnaseq/SMIC_RETINA_PRJNA1246101_2026
+  candidate_panel: config/candidate_panels.yaml
+  minimum_replicates_for_expression_audit: 3
+  manifest_output: data/metadata/rnaseq_manifest.tsv
+  readiness_output: results/rnaseq/phase7_rnaseq_readiness.tsv
+  expression_plan_output: results/rnaseq/phase7_candidate_expression_plan.tsv
+  report_output: reports/generated/phase7_rnaseq_readiness_report.md
+  selected_processing_status: metadata_only_no_raw_read_download
+  recommended_future_method: Use documented read QC and candidate-level quantification against a validated transcriptome or genome annotation. Do not run differential expression unless metadata, design, and replicates justify it.
+  interpretation_notes: Phase 7a registers SRA metadata and prepares expression-readiness tables only. It must not infer expression, pathway activity, organism-wide aging state, causation, or longevity mechanism.
+  registered_runs:
+    - run: SRR32965275
+      release_date: "2025-10-27 10:50:12"
+      load_date: "2025-04-03 09:05:24"
+      spots: 91728255
+      bases: 18439879772
+      avg_length: 201
+      size_mb: 5410
+      download_path: https://sra-downloadb.be-md.ncbi.nlm.nih.gov/sos9/sra-pub-zq-922/SRR032/32965/SRR32965275/SRR32965275.lite.1
+      experiment: SRX28238856
+      library_name: GFB-39131_HTKNGDSXC_2_GS2412a_S39_L002
+      library_strategy: RNA-Seq
+      library_selection: PolyA
+      library_source: TRANSCRIPTOMIC
+      library_layout: PAIRED
+      platform: ILLUMINA
+      model: Illumina NovaSeq 6000
+      sra_study: SRP576249
+      bioproject: PRJNA1246101
+      sample: SRS24586704
+      biosample: SAMN47762445
+      taxon_id: "191813"
+      scientific_name: Somniosus microcephalus
+      sample_name: Greenland_shark_retina_GS24_12
+      sex: male
+      tissue: retina
+    - run: SRR32965277
+      release_date: "2025-10-27 10:50:13"
+      load_date: "2025-04-03 09:08:27"
+      spots: 76023909
+      bases: 15262390117
+      avg_length: 200
+      size_mb: 4826
+      download_path: https://sra-downloadb.be-md.ncbi.nlm.nih.gov/sos9/sra-pub-zq-922/SRR032/32965/SRR32965277/SRR32965277.lite.1
+      experiment: SRX28238854
+      library_name: GFB-39129_HTKNGDSXC_2_GS246b_S37_L002
+      library_strategy: RNA-Seq
+      library_selection: PolyA
+      library_source: TRANSCRIPTOMIC
+      library_layout: PAIRED
+      platform: ILLUMINA
+      model: Illumina NovaSeq 6000
+      sra_study: SRP576249
+      bioproject: PRJNA1246101
+      sample: SRS24586705
+      biosample: SAMN47762443
+      taxon_id: "191813"
+      scientific_name: Somniosus microcephalus
+      sample_name: Greenland_shark_retina_GS24_6
+      sex: male
+      tissue: retina
+    - run: SRR32965276
+      release_date: "2025-10-27 10:50:12"
+      load_date: "2025-04-03 09:04:14"
+      spots: 79073635
+      bases: 15903603370
+      avg_length: 201
+      size_mb: 4719
+      download_path: https://sra-downloadb.be-md.ncbi.nlm.nih.gov/sos9/sra-pub-zq-922/SRR032/32965/SRR32965276/SRR32965276.lite.1
+      experiment: SRX28238855
+      library_name: GFB-39130_HTKNGDSXC_2_GS249b_S38_L002
+      library_strategy: RNA-Seq
+      library_selection: PolyA
+      library_source: TRANSCRIPTOMIC
+      library_layout: PAIRED
+      platform: ILLUMINA
+      model: Illumina NovaSeq 6000
+      sra_study: SRP576249
+      bioproject: PRJNA1246101
+      sample: SRS24586703
+      biosample: SAMN47762444
+      taxon_id: "191813"
+      scientific_name: Somniosus microcephalus
+      sample_name: Greenland_shark_retina_GS24_9
+      sex: female
+      tissue: retina
+    - run: SRR32965274
+      release_date: "2025-10-27 10:50:11"
+      load_date: "2025-04-03 10:38:17"
+      spots: 708443237
+      bases: 213949857574
+      avg_length: 302
+      size_mb: 66541
+      download_path: https://sra-downloadb.be-md.ncbi.nlm.nih.gov/sos9/sra-pub-zq-922/SRR032/32965/SRR32965274/SRR32965274.lite.1
+      experiment: SRX28238857
+      library_name: GFB-33971_HCW7FDRX5_1_5-4minFragm_S1_L001
+      library_strategy: WGS
+      library_selection: other
+      library_source: GENOMIC
+      library_layout: PAIRED
+      platform: ILLUMINA
+      model: Illumina NovaSeq 6000
+      sra_study: SRP576249
+      bioproject: PRJNA1246101
+      sample: SRS24586706
+      biosample: SAMN47762446
+      taxon_id: "191813"
+      scientific_name: Somniosus microcephalus
+      sample_name: Greenland_shark_retina__Shark3
+      sex: unknown
+      tissue: retina
+
+phase7b_expression_quantification_strategy:
+  method: candidate expression quantification strategy
+  status: strategy_only_no_raw_read_quantification
+  phase7a_manifest: data/metadata/rnaseq_manifest.tsv
+  phase7a_readiness: results/rnaseq/phase7_rnaseq_readiness.tsv
+  phase7a_candidate_expression_plan: results/rnaseq/phase7_candidate_expression_plan.tsv
+  candidate_panel: config/candidate_panels.yaml
+  candidate_copy_number: results/orthology/candidate_copy_number.tsv
+  candidate_isoform_audit: results/validation/candidate_isoform_audit.tsv
+  phase4e_gene_summary: results/rescue/phase4e_gene_hardened_summary.tsv
+  phase4e_locus_review: results/rescue/phase4e_locus_manual_review.tsv
+  annotation_gff: data/raw/references/SMIC_TOKYO_GENOME_2025/figshare_annotation/greenland shark annotation/complete.genomic.gff
+  genome_fasta: data/raw/references/SMIC_TOKYO_GENOME_2025/GCA_056099535.1_ASM5609953v1_genomic.fna.gz
+  cds_fasta: data/raw/references/SMIC_TOKYO_GENOME_2025/figshare_annotation/greenland shark annotation/complete.cds.fna
+  transcriptome_fasta_planned: data/interim/rnaseq/phase7b/smic_tokyo.annotation_transcripts.fna
+  tx2gene_planned: data/interim/rnaseq/phase7b/smic_tokyo.tx2gene.tsv
+  salmon_index_planned: data/interim/rnaseq/phase7b/salmon_index
+  candidate_quantification_matrix_planned: results/rnaseq/phase7b_candidate_expression_matrix.tsv
+  reference_strategy_output: results/rnaseq/phase7b_reference_quantification_strategy.tsv
+  candidate_quant_map_output: results/rnaseq/phase7b_candidate_quantification_map.tsv
+  run_plan_output: results/rnaseq/phase7b_quantification_run_plan.tsv
+  report_output: reports/generated/phase7b_quantification_strategy_report.md
+  primary_method: Salmon selective-alignment style transcript quantification against an annotation-derived transcript FASTA with genome decoys, followed by candidate-level transcript-to-gene summarization.
+  fallback_reference: complete.cds.fna can support a coding-sequence-only pilot map, but it is not the preferred final transcriptome reference because UTR reads are not represented.
+  validation_method: Genome-aligned RNA-seq validation with STAR or HISAT2 plus featureCounts/stringent locus review for duplicated, paralogous, repeat-overlapping, or unresolved candidates.
+  high_ambiguity_genes: [FTH1B, H1F0, RAD51, TP53]
+  interpretation_notes: Phase 7b chooses a quantification strategy and prepares candidate-to-reference mapping. It must not download reads, quantify expression, run differential expression, infer pathway activity, generalize retina findings to whole organism, or claim longevity relevance.
+
+phase7c_expression_reference_validation:
+  method: annotation-derived expression-reference construction and candidate quantification input validation
+  status: reference_construction_no_raw_read_quantification
+  annotation_gff: data/raw/references/SMIC_TOKYO_GENOME_2025/figshare_annotation/greenland shark annotation/complete.genomic.gff
+  genome_fasta: data/raw/references/SMIC_TOKYO_GENOME_2025/GCA_056099535.1_ASM5609953v1_genomic.fna.gz
+  phase7b_candidate_quant_map: results/rnaseq/phase7b_candidate_quantification_map.tsv
+  transcript_fasta_output: data/interim/rnaseq/phase7c/smic_tokyo.annotation_transcripts.fna
+  tx2gene_output: data/interim/rnaseq/phase7c/smic_tokyo.tx2gene.tsv
+  reference_qc_output: results/rnaseq/phase7c_expression_reference_qc.tsv
+  candidate_reference_validation_output: results/rnaseq/phase7c_candidate_reference_validation.tsv
+  report_output: reports/generated/phase7c_expression_reference_report.md
+  transcript_feature_types: [mRNA, transcript, lncRNA]
+  interval_feature_preference: exon
+  fallback_interval_feature: CDS
+  construction_method: Pure-Python GFF3 exon extraction from the Tokyo genome FASTA, streaming one scaffold at a time.
+  validation_scope: Validate transcript FASTA and tx2gene against Phase 7b candidate gene IDs before raw-read download or Salmon quantification.
+  interpretation_notes: Phase 7c builds and validates the expression reference. It must not download raw reads, quantify expression, test differential expression, infer pathway activity, or treat reference presence as expression support.
+
+phase7d_rnaseq_quantification:
+  method: retina-only raw-read intake, lightweight FASTQ QC, and guarded Salmon quantification
+  status: execution_capable_no_automatic_raw_read_download
+  phase7a_manifest: data/metadata/rnaseq_manifest.tsv
+  phase7a_readiness: results/rnaseq/phase7_rnaseq_readiness.tsv
+  phase7c_tx2gene: data/interim/rnaseq/phase7c/smic_tokyo.tx2gene.tsv
+  phase7c_candidate_reference_validation: results/rnaseq/phase7c_candidate_reference_validation.tsv
+  transcript_fasta: data/interim/rnaseq/phase7c/smic_tokyo.annotation_transcripts.fna
+  raw_read_local_dir: data/raw/rnaseq/SMIC_RETINA_PRJNA1246101_2026
+  salmon_executable: tools/salmon-docker.cmd
+  salmon_index_dir: data/interim/rnaseq/phase7d/salmon_index
+  salmon_quant_dir: results/rnaseq/salmon
+  logs_dir: logs/rnaseq
+  raw_read_intake_output: results/rnaseq/phase7d_raw_read_intake.tsv
+  fastq_qc_output: results/rnaseq/phase7d_fastq_qc.tsv
+  salmon_preflight_output: results/rnaseq/phase7d_salmon_preflight.tsv
+  salmon_quant_summary_output: results/rnaseq/phase7d_salmon_quant_summary.tsv
+  candidate_expression_matrix_output: results/rnaseq/phase7d_candidate_expression_matrix.tsv
+  report_output: reports/generated/phase7d_rnaseq_quantification_report.md
+  expected_fastq_patterns:
+    - "{run}_1.fastq.gz"
+    - "{run}_2.fastq.gz"
+    - "{run}_R1.fastq.gz"
+    - "{run}_R2.fastq.gz"
+    - "{run}_1.fastq"
+    - "{run}_2.fastq"
+    - "{run}_R1.fastq"
+    - "{run}_R2.fastq"
+  fastq_qc_max_records: 100000
+  checksum_raw_reads: false
+  build_salmon_index_if_missing: false
+  run_salmon_if_ready: true
+  reuse_existing_salmon_quant_if_present: true
+  salmon_threads: 4
+  salmon_library_type: A
+  salmon_extra_args: ["--validateMappings", "--seqBias", "--gcBias"]
+  min_tpm_for_detected: 1.0
+  min_numreads_for_detected: 10.0
+  interpretation_notes: Phase 7d is retina-only. It may produce candidate-level detected/not-detected summaries when local reads are quantified, but it must not run differential expression, infer pathway activation, generalize to whole organism, or claim longevity mechanism.
+
+phase7e_expression_hardening:
+  method: conservative hardening of retina RNA-seq expression interpretation before integrated evidence scoring
+  phase7d_salmon_quant_summary: results/rnaseq/phase7d_salmon_quant_summary.tsv
+  phase7d_fastq_qc: results/rnaseq/phase7d_fastq_qc.tsv
+  phase7d_candidate_expression_matrix: results/rnaseq/phase7d_candidate_expression_matrix.tsv
+  phase7c_candidate_reference_validation: results/rnaseq/phase7c_candidate_reference_validation.tsv
+  candidate_duplication_audit: results/orthology/candidate_duplication_audit.tsv
+  phase4e_gene_hardened_summary: results/rescue/phase4e_gene_hardened_summary.tsv
+  phase5c_gene_repeat_qc_summary: results/repeats/phase5c_gene_repeat_qc_summary.tsv
+  run_qc_output: results/rnaseq/phase7e_run_qc_review.tsv
+  candidate_output: results/rnaseq/phase7e_candidate_expression_hardened.tsv
+  parameter_review_output: results/rnaseq/phase7e_parameter_review.tsv
+  report_output: reports/generated/phase7e_expression_hardening_report.md
+  low_mapping_rate_warning_percent: 30.0
+  very_low_mapping_rate_percent: 20.0
+  min_detected_runs_for_consistent_retina_support: 2
+  min_detection_fraction_for_consistent_retina_support: 0.66
+  interpretation_notes: Phase 7e is a deterministic interpretation-hardening layer. It reviews mapping rates, lightweight FASTQ QC, Salmon index caveats, Phase 7c reference ambiguity, Phase 4 locus ambiguity, and Phase 5 repeat-context artifact risk before expression support can be carried into Phase 8. It must not run differential expression, infer pathway activation, generalize retina findings to whole organism, or claim longevity mechanism.
+
+phase8a_expression_integration:
+  method: integrate Phase 7e hardened retina expression support into evidence scoring without automatic tier upgrades
+  base_evidence: results/evidence/integrated_evidence.tsv
+  phase7e_candidate_expression: results/rnaseq/phase7e_candidate_expression_hardened.tsv
+  phase7e_run_qc: results/rnaseq/phase7e_run_qc_review.tsv
+  phase7e_parameter_review: results/rnaseq/phase7e_parameter_review.tsv
+  expression_evidence_output: results/evidence/phase8a_expression_support_evidence.tsv
+  integration_audit_output: results/evidence/phase8a_expression_integration_audit.tsv
+  integrated_output: results/evidence/phase8a_integrated_evidence.tsv
+  report_output: reports/generated/phase8a_expression_evidence_report.md
+  tiering_policy: Phase 7e expression support may add tissue-specific support or caveats, but it must not upgrade integrated biological evidence tiers unless orthology, locus identity, domain integrity, cross-resource support, and expression-reference validation are all satisfied in a later scoring step.
+  interpretation_notes: Phase 8a is deterministic evidence-table integration. It must not run differential expression, infer pathway activation, generalize retina findings to whole organism, claim causation, or claim longevity mechanism.
+
+phase8b_final_evidence_scoring:
+  method: final integrated evidence scoring and tier audit across orthology, locus validation, repeat context, telomere readiness, and hardened expression support
+  phase8a_integrated_evidence: results/evidence/phase8a_integrated_evidence.tsv
+  phase8a_expression_integration_audit: results/evidence/phase8a_expression_integration_audit.tsv
+  phase4e_gene_hardened_summary: results/rescue/phase4e_gene_hardened_summary.tsv
+  phase5c_gene_repeat_qc_summary: results/repeats/phase5c_gene_repeat_qc_summary.tsv
+  phase6_telomere_gene_audit: results/telomere/phase6_telomere_gene_audit.tsv
+  final_evidence_output: results/evidence/phase8b_final_integrated_evidence.tsv
+  tier_audit_output: results/evidence/phase8b_tier_audit.tsv
+  mechanism_summary_output: results/evidence/phase8b_mechanism_summary.tsv
+  report_output: reports/generated/phase8b_final_evidence_report.md
+  tiering_policy: Phase 8b may retain or conservatively downgrade evidence tiers, but it must not upgrade tiers. Tier 1 requires low artifact risk and compatible orthology/locus/expression support. Tier 2 remains plausible but incomplete evidence, with artifact-prone candidates clearly marked for Phase 9 reporting.
+  interpretation_notes: Phase 8b is a deterministic pre-reporting audit. It must not create new biological mechanism claims, pathway-activity claims, telomere-length claims, validated duplication claims, causation claims, or human translational claims.
+
+phase9_report_generation:
+  method: deterministic report and SVG figure generation from Phase 8b evidence-audit tables
+  phase8b_final_evidence: results/evidence/phase8b_final_integrated_evidence.tsv
+  phase8b_tier_audit: results/evidence/phase8b_tier_audit.tsv
+  phase8b_mechanism_summary: results/evidence/phase8b_mechanism_summary.tsv
+  report_output: reports/final/greenland_shark_longevity_phase9_report.md
+  figure_manifest_output: results/reporting/phase9_figure_manifest.tsv
+  key_findings_output: results/reporting/phase9_key_findings.tsv
+  tier_data_output: reports/figures/data/phase9_evidence_tier_summary.tsv
+  class_data_output: reports/figures/data/phase9_reporting_class_summary.tsv
+  mechanism_matrix_data_output: reports/figures/data/phase9_mechanism_evidence_matrix.tsv
+  artifact_context_data_output: reports/figures/data/phase9_artifact_context_summary.tsv
+  tier_figure_output: reports/figures/phase9_evidence_tier_summary.svg
+  class_figure_output: reports/figures/phase9_reporting_class_summary.svg
+  mechanism_matrix_figure_output: reports/figures/phase9_mechanism_evidence_matrix.svg
+  artifact_context_figure_output: reports/figures/phase9_artifact_context_summary.svg
+  reporting_policy: Phase 9 summarizes Phase 8b evidence status only. It must not change tiers, infer pathway state, validate duplication, infer telomere length, claim causation, or make human translational claims.
+  figure_policy: Figures are generated from versioned TSV tables. Use categorical summaries and evidence matrices rather than inferential statistics because Phase 8b outputs are audit classifications, not replicate-level experimental measurements.
+
+phase9_report_package_audit:
+  method: deterministic traceability and public-repository readiness audit over the final Phase 9 report package
+  phase9_report: reports/final/greenland_shark_longevity_phase9_report.md
+  phase9_figure_manifest: results/reporting/phase9_figure_manifest.tsv
+  phase9_key_findings: results/reporting/phase9_key_findings.tsv
+  release_bundle_paths:
+    - results/evidence/phase8b_final_integrated_evidence.tsv
+    - results/evidence/phase8b_tier_audit.tsv
+    - results/evidence/phase8b_mechanism_summary.tsv
+    - results/reporting/phase9_figure_manifest.tsv
+    - results/reporting/phase9_key_findings.tsv
+    - results/reporting/phase9_report_package_audit.tsv
+    - results/reporting/phase9_public_repository_readiness.tsv
+  package_audit_output: results/reporting/phase9_report_package_audit.tsv
+  release_readiness_output: results/reporting/phase9_public_repository_readiness.tsv
+  report_output: reports/final/phase9_report_package_audit.md
+  interpretation_notes: This audit checks traceability, figure interpretability, and release packaging only. It does not change evidence tiers or create biological claims.
+
+phase3_input_discovery:
+  retrieval_date: "2026-05-27"
+  notes: Search focused on genome-wide protein FASTA, GFF/GTF annotation, gene models, and orthogroup/copy-number supplementary tables associated with the PNAS final article, the bioRxiv preprint, NCBI BioProject/assembly records, University of Tokyo release, and indexed GitHub/web repositories.
+  source_checks:
+    - source_id: PNAS_YANG_2026_FINAL_ARTICLE
+      resource_id: SMIC_TOKYO_GENOME_2025
+      source_type: article
+      url_or_accession: https://www.pnas.org/doi/10.1073/pnas.2601272123
+      searched_for: genome-wide protein FASTA;GFF/GTF annotation;gene models;orthogroup/copy-number supplementary tables
+      status: DATA_AVAILABILITY_SECTION_MANUALLY_CONFIRMED
+      found_file_types: FIGSHARE_ANNOTATION_SOURCE_DECLARED
+      selected_for_download: false
+      local_path: NOT_AVAILABLE
+      notes: Manual inspection of the PNAS data availability section found a Figshare annotation source at https://figshare.com/s/4f1adabbc84fbf5a72e0. Crossref metadata linked only the article PDF URL, and local direct PNAS endpoint checks returned HTTP 403.
+    - source_id: PNAS_YANG_2026_FIGSHARE_ANNOTATION
+      resource_id: SMIC_TOKYO_GENOME_2025
+      source_type: figshare_private_link
+      url_or_accession: https://figshare.com/s/4f1adabbc84fbf5a72e0
+      searched_for: genome annotation;protein sequences predicted from transcriptome data;GFF/GTF annotation;gene models
+      status: LOCAL_FILES_MANUALLY_DOWNLOADED_INVENTORIED
+      found_file_types: complete.genomic.gff;complete.proteins.faa;complete.cds.fna;trinity_out_dir.Trinity.fasta.transdecoder.pep;source_archive_zip
+      selected_for_download: false
+      local_path: data/raw/references/SMIC_TOKYO_GENOME_2025/figshare_annotation
+      notes: PNAS data availability states that genome annotation is available at this Figshare share, including protein sequences predicted from transcriptome data. Files were manually downloaded through a browser and inventoried in data/metadata/figshare_annotation_inventory.tsv. Automated local retrieval reached an AWS WAF JavaScript challenge, so the Figshare share URL is retained as source URL rather than a direct file URL.
+    - source_id: PNAS_YANG_2026_SI_APPENDIX_CANDIDATE
+      resource_id: SMIC_TOKYO_GENOME_2025
+      source_type: supplement_endpoint_check
+      url_or_accession: https://www.pnas.org/doi/suppl/10.1073/pnas.2601272123/suppl_file/pnas.2601272123.sapp.pdf
+      searched_for: supplementary appendix
+      status: DIRECT_ENDPOINT_HTTP_403_NOT_CONFIRMED_AS_DATA_INPUT
+      found_file_types: NOT_CONFIRMED
+      selected_for_download: false
+      local_path: NOT_AVAILABLE
+      notes: Candidate PNAS supplement URL was checked directly and by web index search; no reusable genome/protein/GFF/orthogroup file was confirmed.
+    - source_id: PNAS_YANG_2026_SD01_CANDIDATE
+      resource_id: SMIC_TOKYO_GENOME_2025
+      source_type: supplement_endpoint_check
+      url_or_accession: https://www.pnas.org/doi/suppl/10.1073/pnas.2601272123/suppl_file/pnas.2601272123.sd01.xlsx
+      searched_for: supplementary data workbook
+      status: DIRECT_ENDPOINT_HTTP_403_NOT_CONFIRMED_AS_DATA_INPUT
+      found_file_types: NOT_CONFIRMED
+      selected_for_download: false
+      local_path: NOT_AVAILABLE
+      notes: Candidate PNAS supplementary workbook URL was checked directly and by web index search; no downloadable orthogroup/copy-number table was confirmed.
+    - source_id: PNAS_YANG_2026_SD02_CANDIDATE
+      resource_id: SMIC_TOKYO_GENOME_2025
+      source_type: supplement_endpoint_check
+      url_or_accession: https://www.pnas.org/doi/suppl/10.1073/pnas.2601272123/suppl_file/pnas.2601272123.sd02.xlsx
+      searched_for: supplementary data workbook
+      status: DIRECT_ENDPOINT_HTTP_403_NOT_CONFIRMED_AS_DATA_INPUT
+      found_file_types: NOT_CONFIRMED
+      selected_for_download: false
+      local_path: NOT_AVAILABLE
+      notes: Candidate PNAS supplementary workbook URL was checked directly and by web index search; no downloadable orthogroup/copy-number table was confirmed.
+    - source_id: PNAS_YANG_2026_SD03_CANDIDATE
+      resource_id: SMIC_TOKYO_GENOME_2025
+      source_type: supplement_endpoint_check
+      url_or_accession: https://www.pnas.org/doi/suppl/10.1073/pnas.2601272123/suppl_file/pnas.2601272123.sd03.xlsx
+      searched_for: supplementary data workbook
+      status: DIRECT_ENDPOINT_HTTP_403_NOT_CONFIRMED_AS_DATA_INPUT
+      found_file_types: NOT_CONFIRMED
+      selected_for_download: false
+      local_path: NOT_AVAILABLE
+      notes: Candidate PNAS supplementary workbook URL was checked directly and by web index search; no downloadable orthogroup/copy-number table was confirmed.
+    - source_id: BIORXIV_YANG_2025_PREPRINT_API
+      resource_id: SMIC_TOKYO_GENOME_2025
+      source_type: preprint_metadata
+      url_or_accession: https://api.biorxiv.org/details/biorxiv/10.1101/2025.02.19.638963
+      searched_for: preprint metadata and source XML link
+      status: METADATA_CONFIRMED
+      found_file_types: JATS_XML_LINK_ONLY_NO_DATA_TABLE_LINKS_IN_API_METADATA
+      selected_for_download: false
+      local_path: NOT_AVAILABLE
+      notes: bioRxiv API metadata provided the preprint DOI and JATS XML URL but did not expose genome-wide protein FASTA, GFF/GTF, gene-model, or orthogroup/copy-number data files.
+    - source_id: BIORXIV_YANG_2025_JATS_XML
+      resource_id: SMIC_TOKYO_GENOME_2025
+      source_type: preprint_source_xml
+      url_or_accession: https://www.biorxiv.org/content/early/2025/02/22/2025.02.19.638963.source.xml
+      searched_for: preprint source XML and embedded supplementary links
+      status: DIRECT_ENDPOINT_HTTP_403_NOT_PARSED
+      found_file_types: NOT_CONFIRMED
+      selected_for_download: false
+      local_path: NOT_AVAILABLE
+      notes: The bioRxiv API registered this JATS XML endpoint, but direct local retrieval was blocked by HTTP 403.
+    - source_id: NCBI_DATASETS_GCA_056099535_1
+      resource_id: SMIC_TOKYO_GENOME_2025
+      source_type: ncbi_datasets_api
+      url_or_accession: https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/GCA_056099535.1/dataset_report
+      searched_for: genome assembly metadata and downloadable annotation/protein package availability
+      status: METADATA_CONFIRMED
+      found_file_types: genome_fasta;annotation_genbank;assembly_stats;assembly_report;feature_count;md5checksums
+      selected_for_download: false
+      local_path: data/metadata/reference_file_inventory.tsv
+      notes: NCBI Datasets confirmed GCA_056099535.1 and PRJNA1218902. The assembly FTP package did not list separate protein FASTA or genomic GFF files.
+    - source_id: NCBI_DATASETS_GCA_052327205_1
+      resource_id: SMIC_FLI_GENOME_2025
+      source_type: ncbi_datasets_api
+      url_or_accession: https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/GCA_052327205.1/dataset_report
+      searched_for: genome assembly metadata and downloadable annotation/protein package availability
+      status: METADATA_CONFIRMED
+      found_file_types: genome_fasta;annotation_genbank;assembly_stats;assembly_report;feature_count;md5checksums
+      selected_for_download: false
+      local_path: data/metadata/reference_file_inventory.tsv
+      notes: NCBI Datasets confirmed GCA_052327205.1 and PRJNA1236315. The assembly FTP package did not list separate protein FASTA or genomic GFF files.
+    - source_id: UTOKYO_PRESS_RELEASE_YANG_2026
+      resource_id: SMIC_TOKYO_GENOME_2025
+      source_type: author_institution_release
+      url_or_accession: https://www.a.u-tokyo.ac.jp/topics/topics/
+      searched_for: author-linked release and data links
+      status: ARTICLE_CONTEXT_CONFIRMED_NO_DIRECT_DATA_DOWNLOADS_FOUND
+      found_file_types: publication_context_only
+      selected_for_download: false
+      local_path: NOT_AVAILABLE
+      notes: University of Tokyo release summarizes linker histone and ferritin/FTH1b claims but does not expose genome-wide protein FASTA, GFF/GTF, gene models, or orthogroup/copy-number tables.
+    - source_id: GITHUB_INDEXED_SEARCH_YANG_GREENLAND_SHARK
+      resource_id: SMIC_TOKYO_GENOME_2025
+      source_type: repository_search
+      url_or_accession: site:github.com "Somniosus microcephalus" "GCA_056099535.1" "FTH1b"
+      searched_for: associated repositories with protein FASTA, GFF/GTF, gene models, or orthogroup/copy-number tables
+      status: NO_ASSOCIATED_REPOSITORY_FOUND
+      found_file_types: NONE
+      selected_for_download: false
+      local_path: NOT_AVAILABLE
+      notes: Indexed web/GitHub searches did not identify an associated repository for reusable Yang et al. PNAS genome annotation or orthogroup tables.
+    - source_id: NCBI_DATASETS_CMIL_REFSEQ_2021
+      resource_id: CMIL_REFSEQ_2021
+      source_type: ncbi_datasets_api
+      url_or_accession: https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/GCF_018977255.1/dataset_report
+      searched_for: comparator genome-wide protein FASTA
+      status: PROTEIN_FASTA_URL_CONFIRMED
+      found_file_types: RefSeq protein FASTA;NCBI annotation metadata
+      selected_for_download: true
+      local_path: data/raw/references/CMIL_REFSEQ_2021/GCF_018977255.1_IMCB_Cmil_1.0_protein.faa.gz
+      notes: Elephant shark was selected as the holocephalan chondrichthyan comparator. Protein FASTA URL returned HTTP 200 on 2026-05-27.
+    - source_id: NCBI_DATASETS_SCAN_REFSEQ_2026
+      resource_id: SCAN_REFSEQ_2026
+      source_type: ncbi_datasets_api
+      url_or_accession: https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/GCF_902713615.2/dataset_report
+      searched_for: comparator genome-wide protein FASTA
+      status: PROTEIN_FASTA_URL_CONFIRMED
+      found_file_types: RefSeq protein FASTA;NCBI annotation metadata
+      selected_for_download: true
+      local_path: data/raw/references/SCAN_REFSEQ_2026/GCF_902713615.2_sScyCan1.2_protein.faa.gz
+      notes: Small-spotted catshark was selected as an annotated shark comparator. Protein FASTA URL returned HTTP 200 on 2026-05-27.
+    - source_id: NCBI_DATASETS_ARAD_REFSEQ_2026
+      resource_id: ARAD_REFSEQ_2026
+      source_type: ncbi_datasets_api
+      url_or_accession: https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/GCF_010909765.2/dataset_report
+      searched_for: comparator genome-wide protein FASTA
+      status: PROTEIN_FASTA_URL_CONFIRMED
+      found_file_types: RefSeq protein FASTA;NCBI annotation metadata
+      selected_for_download: true
+      local_path: data/raw/references/ARAD_REFSEQ_2026/GCF_010909765.2_sAmbRad1.1.pri_protein.faa.gz
+      notes: Thorny skate was selected as a batoid chondrichthyan comparator. Protein FASTA URL returned HTTP 200 on 2026-05-27.
+    - source_id: NCBI_DATASETS_RTYP_REFSEQ_2022
+      resource_id: RTYP_REFSEQ_2022
+      source_type: ncbi_datasets_api
+      url_or_accession: https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/GCF_021869965.1/dataset_report
+      searched_for: comparator genome-wide protein FASTA
+      status: PROTEIN_FASTA_URL_CONFIRMED
+      found_file_types: RefSeq protein FASTA;NCBI annotation metadata
+      selected_for_download: true
+      local_path: data/raw/references/RTYP_REFSEQ_2022/GCF_021869965.1_sRhiTyp1.1_protein.faa.gz
+      notes: Whale shark was selected as a large-shark comparator. Protein FASTA URL returned HTTP 200 on 2026-05-27.
+
+demo_inputs:
+  assembly_fasta: data/demo/assemblies/demo_smic_assembly.fa
+  protein_fasta: data/demo/proteins/demo_smic_proteins.fa
+  orthogroups: data/demo/orthology/demo_orthogroups.tsv
+  gene_coordinates: data/demo/annotations/demo_gene_coordinates.tsv
+  domains: data/demo/annotations/demo_domains.tsv
+  expression_support: data/demo/transcriptomics/demo_expression_support.tsv
+
+reference_inputs:
+  assembly_fasta: data/raw/references/SMIC_FLI_GENOME_2025/GCA_052327205.1_FLI_Smic_1.0_genomic.fna.gz
+  protein_fasta: "data/raw/references/SMIC_TOKYO_GENOME_2025/figshare_annotation/greenland shark annotation/complete.proteins.faa"
+  annotation_gff: "data/raw/references/SMIC_TOKYO_GENOME_2025/figshare_annotation/greenland shark annotation/complete.genomic.gff"
+  orthogroups: TODO
+
+reference_intake:
+  retrieval_date: "2026-05-27"
+  raw_dir: data/raw/references
+  notes: Small NCBI metadata/QC files are selected for download by default. Genome FASTA and GenBank files are registered but not downloaded because they are gigabyte-scale. Separate protein FASTA and GFF files are not available in the registered NCBI assembly directories as of the retrieval date.
+
+reference_files:
+  - resource_id: SMIC_FLI_GENOME_2025
+    accession: GCA_052327205.1
+    version: FLI_Smic_1.0
+    file_role: genome_fasta
+    url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/052/327/205/GCA_052327205.1_FLI_Smic_1.0/GCA_052327205.1_FLI_Smic_1.0_genomic.fna.gz
+    local_path: data/raw/references/SMIC_FLI_GENOME_2025/GCA_052327205.1_FLI_Smic_1.0_genomic.fna.gz
+    selected_for_download: false
+    retrieval_date: "2026-05-27"
+    file_status: REMOTE_REGISTERED_NOT_DOWNLOADED
+    byte_size: 1.6G
+    notes: Exact genome FASTA URL registered; not selected for default download because of size.
+  - resource_id: SMIC_FLI_GENOME_2025
+    accession: GCA_052327205.1
+    version: FLI_Smic_1.0
+    file_role: annotation_genbank
+    url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/052/327/205/GCA_052327205.1_FLI_Smic_1.0/GCA_052327205.1_FLI_Smic_1.0_genomic.gbff.gz
+    local_path: data/raw/references/SMIC_FLI_GENOME_2025/GCA_052327205.1_FLI_Smic_1.0_genomic.gbff.gz
+    selected_for_download: false
+    retrieval_date: "2026-05-27"
+    file_status: REMOTE_REGISTERED_NOT_DOWNLOADED
+    byte_size: 2.3G
+    notes: Exact GenBank flatfile URL registered; not selected for default download because of size.
+  - resource_id: SMIC_FLI_GENOME_2025
+    accession: GCA_052327205.1
+    version: FLI_Smic_1.0
+    file_role: annotation_gff
+    url: NOT_AVAILABLE
+    local_path: NOT_AVAILABLE
+    selected_for_download: false
+    retrieval_date: "2026-05-27"
+    file_status: NOT_AVAILABLE_FROM_REGISTERED_SOURCE
+    byte_size: NOT_ASSESSED
+    notes: No separate genomic GFF file is listed in the NCBI assembly directory.
+  - resource_id: SMIC_FLI_GENOME_2025
+    accession: GCA_052327205.1
+    version: FLI_Smic_1.0
+    file_role: protein_fasta
+    url: NOT_AVAILABLE
+    local_path: NOT_AVAILABLE
+    selected_for_download: false
+    retrieval_date: "2026-05-27"
+    file_status: NOT_AVAILABLE_FROM_REGISTERED_SOURCE
+    byte_size: NOT_ASSESSED
+    notes: No separate protein FASTA file is listed in the NCBI assembly directory.
+  - resource_id: SMIC_FLI_GENOME_2025
+    accession: GCA_052327205.1
+    version: FLI_Smic_1.0
+    file_role: assembly_stats
+    url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/052/327/205/GCA_052327205.1_FLI_Smic_1.0/GCA_052327205.1_FLI_Smic_1.0_assembly_stats.txt
+    local_path: data/raw/references/SMIC_FLI_GENOME_2025/GCA_052327205.1_FLI_Smic_1.0_assembly_stats.txt
+    selected_for_download: true
+    retrieval_date: "2026-05-27"
+    file_status: REGISTERED
+    byte_size: 50K
+    notes: Selected for Phase 1 resource-quality assembly QC.
+  - resource_id: SMIC_FLI_GENOME_2025
+    accession: GCA_052327205.1
+    version: FLI_Smic_1.0
+    file_role: assembly_report
+    url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/052/327/205/GCA_052327205.1_FLI_Smic_1.0/GCA_052327205.1_FLI_Smic_1.0_assembly_report.txt
+    local_path: data/raw/references/SMIC_FLI_GENOME_2025/GCA_052327205.1_FLI_Smic_1.0_assembly_report.txt
+    selected_for_download: true
+    retrieval_date: "2026-05-27"
+    file_status: REGISTERED
+    byte_size: 182K
+    notes: Selected for provenance and future coordinate context.
+  - resource_id: SMIC_FLI_GENOME_2025
+    accession: GCA_052327205.1
+    version: FLI_Smic_1.0
+    file_role: feature_count
+    url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/052/327/205/GCA_052327205.1_FLI_Smic_1.0/GCA_052327205.1_FLI_Smic_1.0_feature_count.txt
+    local_path: data/raw/references/SMIC_FLI_GENOME_2025/GCA_052327205.1_FLI_Smic_1.0_feature_count.txt
+    selected_for_download: true
+    retrieval_date: "2026-05-27"
+    file_status: REGISTERED
+    byte_size: 281
+    notes: Selected to document annotation/protein-coding feature availability.
+  - resource_id: SMIC_FLI_GENOME_2025
+    accession: GCA_052327205.1
+    version: FLI_Smic_1.0
+    file_role: md5checksums
+    url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/052/327/205/GCA_052327205.1_FLI_Smic_1.0/md5checksums.txt
+    local_path: data/raw/references/SMIC_FLI_GENOME_2025/md5checksums.txt
+    selected_for_download: true
+    retrieval_date: "2026-05-27"
+    file_status: REGISTERED
+    byte_size: 11K
+    notes: Selected for provenance and checksum verification planning.
+  - resource_id: SMIC_TOKYO_GENOME_2025
+    accession: GCA_056099535.1
+    version: ASM5609953v1
+    file_role: genome_fasta
+    url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/056/099/535/GCA_056099535.1_ASM5609953v1/GCA_056099535.1_ASM5609953v1_genomic.fna.gz
+    local_path: data/raw/references/SMIC_TOKYO_GENOME_2025/GCA_056099535.1_ASM5609953v1_genomic.fna.gz
+    selected_for_download: false
+    retrieval_date: "2026-05-27"
+    file_status: REMOTE_REGISTERED_NOT_DOWNLOADED
+    byte_size: 1.5G
+    notes: Exact genome FASTA URL registered; not selected for default download because of size.
+  - resource_id: SMIC_TOKYO_GENOME_2025
+    accession: GCA_056099535.1
+    version: ASM5609953v1
+    file_role: annotation_genbank
+    url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/056/099/535/GCA_056099535.1_ASM5609953v1/GCA_056099535.1_ASM5609953v1_genomic.gbff.gz
+    local_path: data/raw/references/SMIC_TOKYO_GENOME_2025/GCA_056099535.1_ASM5609953v1_genomic.gbff.gz
+    selected_for_download: false
+    retrieval_date: "2026-05-27"
+    file_status: REMOTE_REGISTERED_NOT_DOWNLOADED
+    byte_size: 2.1G
+    notes: Exact GenBank flatfile URL registered; not selected for default download because of size.
+  - resource_id: SMIC_TOKYO_GENOME_2025
+    accession: GCA_056099535.1
+    version: ASM5609953v1
+    file_role: annotation_gff
+    url: https://figshare.com/s/4f1adabbc84fbf5a72e0
+    local_path: "data/raw/references/SMIC_TOKYO_GENOME_2025/figshare_annotation/greenland shark annotation/complete.genomic.gff"
+    selected_for_download: true
+    download_method: manual_browser
+    retrieval_date: "2026-05-27"
+    file_status: LOCAL_AVAILABLE
+    byte_size: 211277360
+    md5: 84D4E015C8FA34E34FCD9C0568C93AD6
+    sha256: 2930E39720ED5FB3B94C0751ED350390463577F89B5CDC531DDDA89B06408867
+    notes: Manually downloaded from the Figshare annotation source declared in the PNAS data availability section. NCBI assembly package itself still lacks a separate GFF.
+  - resource_id: SMIC_TOKYO_GENOME_2025
+    accession: GCA_056099535.1
+    version: ASM5609953v1
+    file_role: protein_fasta
+    url: https://figshare.com/s/4f1adabbc84fbf5a72e0
+    local_path: "data/raw/references/SMIC_TOKYO_GENOME_2025/figshare_annotation/greenland shark annotation/complete.proteins.faa"
+    selected_for_download: true
+    download_method: manual_browser
+    retrieval_date: "2026-05-27"
+    file_status: LOCAL_AVAILABLE
+    byte_size: 19109010
+    md5: 1F11D5285DC2E8BE7009E13F22F84FF2
+    sha256: F07B3B9B5C0DABDCCAB2523BE1E208AAA5D4B6BD5512ABA75A9B0EE930271A42
+    notes: Genome-annotation protein FASTA from the Figshare annotation source declared in the PNAS data availability section. Candidate input for protein QC and OrthoFinder staging; not yet biological evidence.
+  - resource_id: SMIC_TOKYO_GENOME_2025
+    accession: GCA_056099535.1
+    version: ASM5609953v1
+    file_role: coding_sequence_fasta
+    url: https://figshare.com/s/4f1adabbc84fbf5a72e0
+    local_path: "data/raw/references/SMIC_TOKYO_GENOME_2025/figshare_annotation/greenland shark annotation/complete.cds.fna"
+    selected_for_download: true
+    download_method: manual_browser
+    retrieval_date: "2026-05-27"
+    file_status: LOCAL_AVAILABLE
+    byte_size: 63087588
+    md5: 1911AC4ED05CE388D90401E4154BBF81
+    sha256: D25AE50CF08CE26F46084EFB065FF60A45936D03BEC864F839A08D74A8A6D5BC
+    notes: Coding-sequence FASTA from the Figshare annotation source; not used directly for OrthoFinder.
+  - resource_id: SMIC_TOKYO_GENOME_2025
+    accession: GCA_056099535.1
+    version: ASM5609953v1
+    file_role: transcriptome_transdecoder_peptide_fasta
+    url: https://figshare.com/s/4f1adabbc84fbf5a72e0
+    local_path: "data/raw/references/SMIC_TOKYO_GENOME_2025/figshare_annotation/greenland shark annotation/trinity_out_dir.Trinity.fasta.transdecoder.pep"
+    selected_for_download: true
+    download_method: manual_browser
+    retrieval_date: "2026-05-27"
+    file_status: LOCAL_AVAILABLE
+    byte_size: 22301609
+    md5: A3E48835E3A88035B9859FD16CBBE845
+    sha256: 54DE3ED07A64DF7F179328B9074AA167DFF4E9F5734F57A8484E00066AA5223C
+    notes: Transcriptome-derived TransDecoder peptide FASTA. Inventory only for now; keep separate from genome-annotation proteome and candidate copy-number analysis.
+  - resource_id: SMIC_TOKYO_GENOME_2025
+    accession: GCA_056099535.1
+    version: ASM5609953v1
+    file_role: figshare_source_archive
+    url: https://figshare.com/s/4f1adabbc84fbf5a72e0
+    local_path: "data/raw/references/SMIC_TOKYO_GENOME_2025/figshare_annotation/greenland shark annotation.zip"
+    selected_for_download: true
+    download_method: manual_browser
+    retrieval_date: "2026-05-27"
+    file_status: LOCAL_AVAILABLE
+    byte_size: 315776371
+    md5: EF218270282DA95DA88AB578DA457FA9
+    sha256: 2FB49DEAB7260589D2BAEF20536531405232EAD8C2AE9A8917ED43D23612D885
+    notes: Original manually downloaded Figshare archive retained for provenance; extracted files are registered separately.
+  - resource_id: SMIC_TOKYO_GENOME_2025
+    accession: GCA_056099535.1
+    version: ASM5609953v1
+    file_role: assembly_stats
+    url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/056/099/535/GCA_056099535.1_ASM5609953v1/GCA_056099535.1_ASM5609953v1_assembly_stats.txt
+    local_path: data/raw/references/SMIC_TOKYO_GENOME_2025/GCA_056099535.1_ASM5609953v1_assembly_stats.txt
+    selected_for_download: true
+    retrieval_date: "2026-05-27"
+    file_status: REGISTERED
+    byte_size: 4.8K
+    notes: Selected for Phase 1 resource-quality assembly QC.
+  - resource_id: SMIC_TOKYO_GENOME_2025
+    accession: GCA_056099535.1
+    version: ASM5609953v1
+    file_role: assembly_report
+    url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/056/099/535/GCA_056099535.1_ASM5609953v1/GCA_056099535.1_ASM5609953v1_assembly_report.txt
+    local_path: data/raw/references/SMIC_TOKYO_GENOME_2025/GCA_056099535.1_ASM5609953v1_assembly_report.txt
+    selected_for_download: true
+    retrieval_date: "2026-05-27"
+    file_status: REGISTERED
+    byte_size: 187K
+    notes: Selected for provenance and future coordinate context.
+  - resource_id: SMIC_TOKYO_GENOME_2025
+    accession: GCA_056099535.1
+    version: ASM5609953v1
+    file_role: feature_count
+    url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/056/099/535/GCA_056099535.1_ASM5609953v1/GCA_056099535.1_ASM5609953v1_feature_count.txt
+    local_path: data/raw/references/SMIC_TOKYO_GENOME_2025/GCA_056099535.1_ASM5609953v1_feature_count.txt
+    selected_for_download: true
+    retrieval_date: "2026-05-27"
+    file_status: REGISTERED
+    byte_size: 168
+    notes: Selected to document annotation/protein-coding feature availability.
+  - resource_id: SMIC_TOKYO_GENOME_2025
+    accession: GCA_056099535.1
+    version: ASM5609953v1
+    file_role: md5checksums
+    url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/056/099/535/GCA_056099535.1_ASM5609953v1/md5checksums.txt
+    local_path: data/raw/references/SMIC_TOKYO_GENOME_2025/md5checksums.txt
+    selected_for_download: true
+    retrieval_date: "2026-05-27"
+    file_status: REGISTERED
+    byte_size: 719
+    notes: Selected for provenance and checksum verification planning.
+  - resource_id: SMIC_RETINA_PRJNA1246101_2026
+    accession: PV442159-PV442194
+    version: GenBank coding sequences
+    file_role: coding_sequence_fasta
+    url: "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=PV442159,PV442160,PV442161,PV442162,PV442163,PV442164,PV442165,PV442166,PV442167,PV442168,PV442169,PV442170,PV442171,PV442172,PV442173,PV442174,PV442175,PV442176,PV442177,PV442178,PV442179,PV442180,PV442181,PV442182,PV442183,PV442184,PV442185,PV442186,PV442187,PV442188,PV442189,PV442190,PV442191,PV442192,PV442193,PV442194&rettype=fasta&retmode=text"
+    local_path: data/raw/references/SMIC_RETINA_PRJNA1246101_2026/PV442159-PV442194_coding_sequences.fna
+    selected_for_download: true
+    retrieval_date: "2026-05-27"
+    file_status: REGISTERED
+    byte_size: NOT_ASSESSED
+    notes: Selected small coding-sequence FASTA from the retinal study resource; not a genome assembly annotation.
+  - resource_id: SMIC_RETINA_PRJNA1246101_2026
+    accession: PV442159-PV442194
+    version: GenBank CDS translations
+    file_role: protein_fasta
+    url: "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=PV442159,PV442160,PV442161,PV442162,PV442163,PV442164,PV442165,PV442166,PV442167,PV442168,PV442169,PV442170,PV442171,PV442172,PV442173,PV442174,PV442175,PV442176,PV442177,PV442178,PV442179,PV442180,PV442181,PV442182,PV442183,PV442184,PV442185,PV442186,PV442187,PV442188,PV442189,PV442190,PV442191,PV442192,PV442193,PV442194&rettype=fasta_cds_aa&retmode=text"
+    local_path: data/raw/references/SMIC_RETINA_PRJNA1246101_2026/PV442159-PV442194_cds_translations.faa
+    selected_for_download: true
+    retrieval_date: "2026-05-27"
+    file_status: REGISTERED
+    byte_size: NOT_ASSESSED
+    notes: Selected small CDS-derived amino-acid FASTA for sequence QC only; not a whole-genome protein set.
+  - resource_id: CMIL_REFSEQ_2021
+    accession: GCF_018977255.1
+    version: IMCB_Cmil_1.0
+    file_role: protein_fasta
+    url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/018/977/255/GCF_018977255.1_IMCB_Cmil_1.0/GCF_018977255.1_IMCB_Cmil_1.0_protein.faa.gz
+    local_path: data/raw/references/CMIL_REFSEQ_2021/GCF_018977255.1_IMCB_Cmil_1.0_protein.faa.gz
+    selected_for_download: true
+    retrieval_date: "2026-05-27"
+    file_status: REGISTERED
+    byte_size: 7924940
+    notes: Selected RefSeq genome-wide protein FASTA for Phase 3 chondrichthyan comparator input. HEAD check returned HTTP 200 on 2026-05-27.
+  - resource_id: SCAN_REFSEQ_2026
+    accession: GCF_902713615.2
+    version: sScyCan1.2
+    file_role: protein_fasta
+    url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/902/713/615/GCF_902713615.2_sScyCan1.2/GCF_902713615.2_sScyCan1.2_protein.faa.gz
+    local_path: data/raw/references/SCAN_REFSEQ_2026/GCF_902713615.2_sScyCan1.2_protein.faa.gz
+    selected_for_download: true
+    retrieval_date: "2026-05-27"
+    file_status: REGISTERED
+    byte_size: 8786309
+    notes: Selected RefSeq genome-wide protein FASTA for Phase 3 shark comparator input. HEAD check returned HTTP 200 on 2026-05-27.
+  - resource_id: ARAD_REFSEQ_2026
+    accession: GCF_010909765.2
+    version: sAmbRad1.1.pri
+    file_role: protein_fasta
+    url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/010/909/765/GCF_010909765.2_sAmbRad1.1.pri/GCF_010909765.2_sAmbRad1.1.pri_protein.faa.gz
+    local_path: data/raw/references/ARAD_REFSEQ_2026/GCF_010909765.2_sAmbRad1.1.pri_protein.faa.gz
+    selected_for_download: true
+    retrieval_date: "2026-05-27"
+    file_status: REGISTERED
+    byte_size: 7888459
+    notes: Selected RefSeq genome-wide protein FASTA for Phase 3 batoid comparator input. HEAD check returned HTTP 200 on 2026-05-27.
+  - resource_id: RTYP_REFSEQ_2022
+    accession: GCF_021869965.1
+    version: sRhiTyp1.1
+    file_role: protein_fasta
+    url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/021/869/965/GCF_021869965.1_sRhiTyp1.1/GCF_021869965.1_sRhiTyp1.1_protein.faa.gz
+    local_path: data/raw/references/RTYP_REFSEQ_2022/GCF_021869965.1_sRhiTyp1.1_protein.faa.gz
+    selected_for_download: true
+    retrieval_date: "2026-05-27"
+    file_status: REGISTERED
+    byte_size: 8174611
+    notes: Selected RefSeq genome-wide protein FASTA for Phase 3 large-shark comparator input. HEAD check returned HTTP 200 on 2026-05-27.
+
+species:
+  - species_id: smic
+    scientific_name: Somniosus microcephalus
+    common_name: Greenland shark
+    role: focal
+    taxon_id: "191813"
+    resource_ids:
+      - SMIC_FLI_GENOME_2025
+      - SMIC_TOKYO_GENOME_2025
+      - SMIC_RETINA_PRJNA1246101_2026
+    rationale: Focal long-lived vertebrate species for public genome and transcriptome evidence ranking.
+    status: REGISTERED
+  - species_id: cmil
+    scientific_name: Callorhinchus milii
+    common_name: Elephant shark
+    role: comparator
+    taxon_id: "7868"
+    resource_ids:
+      - CMIL_REFSEQ_2021
+    rationale: Chondrichthyan comparator placeholder for future orthology analyses.
+    status: REGISTERED
+  - species_id: scan
+    scientific_name: Scyliorhinus canicula
+    common_name: Small-spotted catshark
+    role: comparator
+    taxon_id: "7830"
+    resource_ids:
+      - SCAN_REFSEQ_2026
+    rationale: Shark comparator with RefSeq annotation; useful for separating shark-lineage signals from Greenland-shark-specific hypotheses.
+    status: REGISTERED
+  - species_id: arad
+    scientific_name: Amblyraja radiata
+    common_name: Thorny skate
+    role: comparator
+    taxon_id: "386614"
+    resource_ids:
+      - ARAD_REFSEQ_2026
+    rationale: Batoid chondrichthyan comparator with RefSeq annotation; adds lineage breadth without leaving cartilaginous fishes.
+    status: REGISTERED
+  - species_id: rtyp
+    scientific_name: Rhincodon typus
+    common_name: Whale shark
+    role: comparator
+    taxon_id: "259920"
+    resource_ids:
+      - RTYP_REFSEQ_2022
+    rationale: Large shark comparator with RefSeq annotation; useful for distinguishing broad shark biology from Greenland-shark candidate mechanisms.
+    status: REGISTERED
+
+resources:
+  - resource_id: SMIC_FLI_GENOME_2025
+    species: Somniosus microcephalus
+    accession: GCA_052327205.1_FLI_Smic_1.0; PRJNA1236315; SAMN47384478
+    source: NCBI/UCSC GenArk/FLI genome browser
+    resource_type: genome_assembly
+    status: REGISTERED
+    size: Genome FASTA 1.6G; GenBank flatfile 2.3G; assembly_stats 50K
+    local_path: data/raw/references/SMIC_FLI_GENOME_2025
+    source_url: https://www.ncbi.nlm.nih.gov/datasets/genome/GCA_052327205.1/
+    publication_or_resource: Sahm et al. bioRxiv 2024; FLI/UCSC genome browser
+    usage_notes: Exact NCBI assembly URLs registered. Small assembly_stats, assembly_report, feature_count, and md5 files are selected for Phase 1 intake. Genome FASTA and GenBank are registered but not downloaded by default. Separate protein FASTA and GFF are not available in the registered NCBI assembly directory.
+    expected_files: genome_fasta;annotation_genbank;assembly_stats;assembly_report;feature_count;md5checksums;protein_fasta_NOT_AVAILABLE;annotation_gff_NOT_AVAILABLE
+  - resource_id: SMIC_TOKYO_GENOME_2025
+    species: Somniosus microcephalus
+    accession: PRJNA1218902; GCA_056099535.1; JBLTJD000000000; SAMN46535397
+    source: NCBI BioProject
+    resource_type: genome_assembly_wgs_sra
+    status: REGISTERED
+    size: Genome FASTA 1.5G; GenBank flatfile 2.1G; assembly_stats 4.8K; BioProject data volume 383 Gbases / 0.16 Tbytes
+    local_path: data/raw/references/SMIC_TOKYO_GENOME_2025
+    source_url: https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1218902
+    publication_or_resource: University of Tokyo BioProject
+    usage_notes: Exact NCBI assembly URLs registered. Small assembly_stats, assembly_report, feature_count, and md5 files are selected for Phase 1 intake. Genome FASTA and GenBank are registered but not downloaded by default. Separate protein FASTA and GFF are not available in the registered NCBI assembly directory.
+    expected_files: genome_fasta;annotation_genbank;assembly_stats;assembly_report;feature_count;md5checksums;protein_fasta_NOT_AVAILABLE;annotation_gff_NOT_AVAILABLE
+  - resource_id: SMIC_RETINA_PRJNA1246101_2026
+    species: Somniosus microcephalus
+    accession: PRJNA1246101; PV442159-PV442194
+    source: NCBI BioProject/SRA; Nature Communications
+    resource_type: raw_reads_and_coding_sequences
+    status: REGISTERED
+    size: 264 Gbases; 85456 Mbytes BioProject data volume
+    local_path: data/raw/references/SMIC_RETINA_PRJNA1246101_2026
+    source_url: https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1246101
+    publication_or_resource: Fogg et al. Nature Communications 2026
+    usage_notes: Raw-read processing is deferred. Coding-sequence FASTA and CDS-derived amino-acid translations are selected for small-file intake and QC only; they are not a genome-wide protein set.
+    expected_files: sra_reads_NOT_DOWNLOADED;coding_sequence_fasta;cds_translation_protein_fasta
+  - resource_id: CMIL_REFSEQ_2021
+    species: Callorhinchus milii
+    accession: GCF_018977255.1; PRJNA575613
+    source: NCBI RefSeq
+    resource_type: genome_assembly_refseq_annotation
+    status: REGISTERED
+    size: protein FASTA 7924940 bytes
+    local_path: data/raw/references/CMIL_REFSEQ_2021
+    source_url: https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_018977255.1/
+    publication_or_resource: NCBI Callorhinchus milii Annotation Release 101
+    usage_notes: Comparator proteome selected for Phase 3 orthology input. Resource-quality only until orthology and candidate audits are run.
+    expected_files: protein_fasta
+  - resource_id: SCAN_REFSEQ_2026
+    species: Scyliorhinus canicula
+    accession: GCF_902713615.2; PRJEB35945
+    source: NCBI RefSeq
+    resource_type: genome_assembly_refseq_annotation
+    status: REGISTERED
+    size: protein FASTA 8786309 bytes
+    local_path: data/raw/references/SCAN_REFSEQ_2026
+    source_url: https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_902713615.2/
+    publication_or_resource: NCBI Scyliorhinus canicula Annotation Release GCF_902713615.2-RS_2026_03
+    usage_notes: Comparator proteome selected for Phase 3 orthology input. Resource-quality only until orthology and candidate audits are run.
+    expected_files: protein_fasta
+  - resource_id: ARAD_REFSEQ_2026
+    species: Amblyraja radiata
+    accession: GCF_010909765.2; PRJNA591369
+    source: NCBI RefSeq
+    resource_type: genome_assembly_refseq_annotation
+    status: REGISTERED
+    size: protein FASTA 7888459 bytes
+    local_path: data/raw/references/ARAD_REFSEQ_2026
+    source_url: https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_010909765.2/
+    publication_or_resource: NCBI Amblyraja radiata Annotation Release GCF_010909765.2-RS_2026_05
+    usage_notes: Comparator proteome selected for Phase 3 orthology input. Resource-quality only until orthology and candidate audits are run.
+    expected_files: protein_fasta
+  - resource_id: RTYP_REFSEQ_2022
+    species: Rhincodon typus
+    accession: GCF_021869965.1; PRJNA703743
+    source: NCBI RefSeq
+    resource_type: genome_assembly_refseq_annotation
+    status: REGISTERED
+    size: protein FASTA 8174611 bytes
+    local_path: data/raw/references/RTYP_REFSEQ_2022
+    source_url: https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_021869965.1/
+    publication_or_resource: NCBI Rhincodon typus Annotation Release 101
+    usage_notes: Comparator proteome selected for Phase 3 orthology input. Resource-quality only until orthology and candidate audits are run.
+    expected_files: protein_fasta

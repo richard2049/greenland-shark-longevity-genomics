@@ -1,0 +1,6 @@
+species_id	scientific_name	common_name	role	taxon_id	resource_ids	rationale	status
+smic	Somniosus microcephalus	Greenland shark	focal	191813	SMIC_FLI_GENOME_2025;SMIC_TOKYO_GENOME_2025;SMIC_RETINA_PRJNA1246101_2026	Focal long-lived vertebrate species for public genome and transcriptome evidence ranking.	REGISTERED
+cmil	Callorhinchus milii	Elephant shark	comparator	7868	CMIL_REFSEQ_2021	Chondrichthyan comparator placeholder for future orthology analyses.	REGISTERED
+scan	Scyliorhinus canicula	Small-spotted catshark	comparator	7830	SCAN_REFSEQ_2026	Shark comparator with RefSeq annotation; useful for separating shark-lineage signals from Greenland-shark-specific hypotheses.	REGISTERED
+arad	Amblyraja radiata	Thorny skate	comparator	386614	ARAD_REFSEQ_2026	Batoid chondrichthyan comparator with RefSeq annotation; adds lineage breadth without leaving cartilaginous fishes.	REGISTERED
+rtyp	Rhincodon typus	Whale shark	comparator	259920	RTYP_REFSEQ_2022	Large shark comparator with RefSeq annotation; useful for distinguishing broad shark biology from Greenland-shark candidate mechanisms.	REGISTERED

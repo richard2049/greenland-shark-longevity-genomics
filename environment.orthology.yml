@@ -1,0 +1,16 @@
+# Linux/WSL environment for Phase 3 OrthoFinder execution.
+# Do not create this environment from native Windows PowerShell; Bioconda's
+# OrthoFinder dependency stack is not solvable for the current win-64 platform.
+name: green_shark_orthology
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python>=3.11,<3.13
+  - snakemake-minimal>=8
+  - pyyaml>=6
+  - pytest>=8
+  - orthofinder=2.5.5
+  - pip
+  - pip:
+      - -e .

@@ -1,0 +1,199 @@
+metadata:
+  schema_version: "1.0"
+  note: Candidate panels seed analyses only. Missing IDs are marked TODO or NOT_ASSESSED.
+
+panels:
+  dna_repair_genome_stability:
+    mechanism: DNA repair/genome stability
+    candidates:
+      - gene_symbol: ERCC1
+        synonyms: [ERCC1-XPF complex partner]
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Retina relevance must be interpreted as tissue-specific unless broader evidence is added.
+      - gene_symbol: ERCC4
+        synonyms: [XPF]
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Expression support alone cannot establish repair activity.
+      - gene_symbol: RAD51
+        synonyms: []
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Copy-number interpretation requires isoform and locus checks.
+      - gene_symbol: BRCA1
+        synonyms: []
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Absence from an annotation must not be treated as gene loss.
+      - gene_symbol: MSH2
+        synonyms: []
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Orthology is required because symbols can be propagated inconsistently.
+  p53_pathway:
+    mechanism: p53 pathway
+    candidates:
+      - gene_symbol: TP53
+        synonyms: [p53]
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Sequence features do not prove pathway activation or tumor-suppression phenotype.
+      - gene_symbol: MDM2
+        synonyms: []
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Regulatory relationships require functional validation.
+      - gene_symbol: ATM
+        synonyms: []
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Checkpoint membership does not imply longevity relevance.
+      - gene_symbol: CHEK2
+        synonyms: [CHK2]
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Domain and orthology support are required before interpretation.
+  chromatin_histones:
+    mechanism: Chromatin and epigenome-related regulation
+    candidates:
+      - gene_symbol: H1F0
+        synonyms: [H1-0, linker histone H1.0]
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Histone nomenclature varies across annotations; reported linker-histone amino-acid changes require direct sequence alignment and orthology validation before interpretation.
+      - gene_symbol: HMGB1
+        synonyms: []
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Broad chromatin roles are not aging-specific.
+      - gene_symbol: SMARCA4
+        synonyms: [BRG1]
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Chromatin-remodeling genes require domain-aware orthology.
+  telomere_shelterin:
+    mechanism: Telomere-related biology
+    candidates:
+      - gene_symbol: TERT
+        synonyms: [telomerase reverse transcriptase]
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Presence does not imply telomerase activity or telomere length.
+      - gene_symbol: TERF1
+        synonyms: [TRF1]
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Shelterin annotations can be difficult outside mammals.
+      - gene_symbol: TERF2
+        synonyms: [TRF2]
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Shelterin annotations can be difficult outside mammals; do not infer telomere protection state from sequence presence alone.
+      - gene_symbol: POT1
+        synonyms: []
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Paralogy and lineage-specific annotation require caution.
+      - gene_symbol: TINF2
+        synonyms: [TIN2]
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Shelterin complex membership does not imply telomere length or pathway activity.
+      - gene_symbol: ACD
+        synonyms: [TPP1, TINT1, PTOP]
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Gene-symbol aliases are ambiguous; orthology and domain-aware validation are required.
+      - gene_symbol: TERF2IP
+        synonyms: [RAP1]
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: RAP1/TERF2IP annotations require orthology checks and must not be treated as telomere activity evidence.
+  ferroptosis_iron_handling:
+    mechanism: Ferroptosis, iron handling, and oxidative stress
+    candidates:
+      - gene_symbol: FTH1
+        synonyms: [ferritin heavy chain]
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Ferritin copy number can be affected by annotation fragments.
+      - gene_symbol: FTH1B
+        synonyms: [FTH1b, ferritin heavy chain 1b]
+        reference_ids: {human_gene: NOT_ASSESSED, uniprot: TODO}
+        caveats: PNAS-reported copy-number increase requires genome-wide protein or annotation resources, isoform filtering, separable genomic loci, and cross-resource validation.
+      - gene_symbol: FTL
+        synonyms: [ferritin light chain]
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Iron handling does not imply ferroptosis resistance without functional evidence.
+      - gene_symbol: GPX4
+        synonyms: []
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Lipid-peroxidation interpretation requires biochemical context.
+  antioxidant_response:
+    mechanism: Antioxidant response
+    candidates:
+      - gene_symbol: NFE2L2
+        synonyms: [NRF2]
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Do not infer pathway activation from gene presence.
+      - gene_symbol: KEAP1
+        synonyms: []
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Regulatory inference needs expression or functional support.
+      - gene_symbol: SOD2
+        synonyms: []
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Mitochondrial antioxidant genes have broad metabolic roles.
+  mitochondrial_maintenance:
+    mechanism: Mitochondrial biology and metabolism
+    candidates:
+      - gene_symbol: PARK2
+        synonyms: [PRKN]
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Mitophagy relevance requires pathway-level evidence.
+      - gene_symbol: PINK1
+        synonyms: []
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Cold and deep-sea metabolism are major confounders.
+      - gene_symbol: TFAM
+        synonyms: []
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Mitochondrial maintenance cannot be inferred from sequence alone.
+  immune_inflammatory_regulation:
+    mechanism: Immune and inflammatory regulation
+    candidates:
+      - gene_symbol: TLR3
+        synonyms: []
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Immune adaptation must be separated from aging-specific interpretation.
+      - gene_symbol: TLR4
+        synonyms: []
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Toll-like receptor copy number is artifact-prone without genomic context.
+      - gene_symbol: TNF
+        synonyms: []
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Cytokine family expansions require careful orthology.
+      - gene_symbol: LRRFIP1
+        synonyms: []
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Published immune-family findings remain NOT_ASSESSED until reproduced.
+  proteostasis_autophagy:
+    mechanism: Proteostasis and autophagy
+    candidates:
+      - gene_symbol: HSPA8
+        synonyms: [HSC70]
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Chaperone genes are conserved and not aging-specific by default.
+      - gene_symbol: HSP90AA1
+        synonyms: []
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Expression or copy number must be interpreted cautiously.
+      - gene_symbol: ATG5
+        synonyms: []
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Autophagy pathway presence does not imply altered autophagic flux.
+      - gene_symbol: SQSTM1
+        synonyms: [p62]
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Functional validation is required for proteostasis claims.
+  retinal_preservation:
+    mechanism: Tissue-specific preservation
+    candidates:
+      - gene_symbol: RH1
+        synonyms: [rhodopsin]
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Retinal evidence is tissue-specific and may reflect deep-sea visual ecology.
+      - gene_symbol: SAG
+        synonyms: [arrestin]
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Retinal expression does not generalize to systemic longevity.
+      - gene_symbol: GNAT1
+        synonyms: []
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Phototransduction evidence is not direct aging mechanism evidence.
+      - gene_symbol: ELOVL2
+        synonyms: []
+        reference_ids: {human_gene: TODO, uniprot: TODO}
+        caveats: Lipid biology requires tissue and biochemical context.

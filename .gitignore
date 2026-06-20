@@ -1,0 +1,50 @@
+# Runtime outputs and local data
+data/raw/
+data/interim/
+data/processed/
+reports/generated/
+logs/
+.snakemake/
+
+# Keep most result outputs ignored, but retain the small final release bundle.
+results/*
+!results/evidence/
+results/evidence/*
+!results/evidence/phase8b_final_integrated_evidence.tsv
+!results/evidence/phase8b_tier_audit.tsv
+!results/evidence/phase8b_mechanism_summary.tsv
+!results/reporting/
+results/reporting/*
+!results/reporting/phase9_figure_manifest.tsv
+!results/reporting/phase9_key_findings.tsv
+!results/reporting/phase9_report_package_audit.tsv
+!results/reporting/phase9_public_repository_readiness.tsv
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+.tmp/
+*.egg-info/
+condaenv.*.requirements.txt
+
+# Local environments and notebooks
+.venv/
+env/
+*.ipynb_checkpoints/
+
+# Large archives and sequence files downloaded outside demo fixtures
+*.zip
+*.tar
+*.tar.gz
+*.fq
+*.fastq
+*.fq.gz
+*.fastq.gz
+*.bam
+*.sam
+*.cram
+*.2bit

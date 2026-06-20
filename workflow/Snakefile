@@ -1,0 +1,1134 @@
+configfile: "config/config.yaml"
+
+mode = config.get("workflow_mode", "demo")
+phase4d_like_modes = {"phase4d_consolidation", "phase4e_locus_hardening", "phase5_repeat_context", "phase5c_repeat_qc", "phase6_telomere", "phase7_rnaseq_readiness", "phase7b_quantification_strategy", "phase7c_expression_reference", "phase7d_rnaseq_quantification", "phase7e_expression_hardening", "phase8a_expression_integration", "phase8b_final_evidence_scoring", "phase9_report_generation", "phase9_report_package_audit"}
+base_evidence_output = "results/evidence/phase3_integrated_evidence.tsv" if mode in phase4d_like_modes else "results/evidence/integrated_evidence.tsv"
+phase4d_integrated_output = "results/evidence/phase4d_integrated_evidence.tsv" if mode in {"phase5_repeat_context", "phase5c_repeat_qc", "phase6_telomere", "phase7_rnaseq_readiness", "phase7b_quantification_strategy", "phase7c_expression_reference", "phase7d_rnaseq_quantification", "phase7e_expression_hardening", "phase8a_expression_integration", "phase8b_final_evidence_scoring", "phase9_report_generation", "phase9_report_package_audit"} else "results/evidence/integrated_evidence.tsv"
+
+metadata_targets = [
+    "data/metadata/data_manifest.tsv",
+    "data/metadata/species_manifest.tsv",
+    "data/metadata/resource_status.tsv",
+    "results/validation/candidate_panel_validation.tsv",
+]
+
+demo_targets = metadata_targets + [
+    "results/qc/assembly_qc.tsv",
+    "results/qc/protein_qc.tsv",
+    "results/orthology/candidate_copy_number.tsv",
+    "results/orthology/candidate_duplication_audit.tsv",
+    base_evidence_output,
+    "reports/generated/preliminary_report.md",
+]
+
+reference_targets = metadata_targets + [
+    "data/metadata/reference_file_inventory.tsv",
+    "data/metadata/figshare_annotation_inventory.tsv",
+    "results/qc/reference_assembly_qc.tsv",
+    "results/qc/reference_annotation_qc.tsv",
+    "results/qc/reference_protein_qc.tsv",
+    "results/claims/publication_claim_audit.tsv",
+    "results/readiness/phase3_source_checks.tsv",
+    "results/orthology/reference_gene_coordinates.tsv",
+    "results/orthology/orthofinder_input_manifest.tsv",
+    "results/orthology/orthofinder_preflight.tsv",
+]
+
+orthology_targets = reference_targets + [
+    "results/orthofinder/.orthofinder_complete.txt",
+    "results/orthology/orthogroup_gene_counts_long.tsv",
+    "results/orthology/orthofinder_species_summary.tsv",
+    "results/orthology/candidate_copy_number.tsv",
+    "results/orthology/candidate_duplication_audit.tsv",
+    base_evidence_output,
+    "results/validation/candidate_isoform_audit.tsv",
+    "results/validation/domain_check_targets.tsv",
+    "results/validation/high_priority_rescue_targets.tsv",
+    "data/interim/candidate_validation/representative_candidate_proteins.faa",
+]
+
+orthology_postprocess_targets = reference_targets + [
+    "results/orthology/orthogroup_gene_counts_long.tsv",
+    "results/orthology/orthofinder_species_summary.tsv",
+    "results/orthology/candidate_copy_number.tsv",
+    "results/orthology/candidate_duplication_audit.tsv",
+    base_evidence_output,
+    "results/validation/candidate_isoform_audit.tsv",
+    "results/validation/domain_check_targets.tsv",
+    "results/validation/high_priority_rescue_targets.tsv",
+    "data/interim/candidate_validation/representative_candidate_proteins.faa",
+]
+
+domain_validation_targets = orthology_postprocess_targets + [
+    "results/validation/hmmer_pfam_preflight.tsv",
+    "results/domains/representative_candidate_proteins.pfam.domtblout",
+    "results/domains/representative_candidate_proteins.pfam.txt",
+    "results/validation/candidate_domain_integrity.tsv",
+]
+
+annotation_rescue_targets = domain_validation_targets + [
+    "results/rescue/phase4_rescue_query_inventory.tsv",
+    "results/rescue/phase4_forward_hits.tsv",
+    "results/rescue/phase4_reciprocal_hits.tsv",
+    "results/rescue/phase4_annotation_rescue_summary.tsv",
+    "results/rescue/phase4_genome_rescue_plan.tsv",
+    "data/interim/annotation_rescue/phase4_rescue_candidate_proteins.faa",
+]
+
+genome_validation_targets = annotation_rescue_targets + [
+    "results/rescue/phase4b_miniprot_preflight.tsv",
+    "data/interim/annotation_rescue/phase4b_miniprot_queries.faa",
+    "data/interim/annotation_rescue/phase4b_miniprot_queries.tsv",
+    "data/interim/annotation_rescue/phase4b_target_scaffolds.fna",
+    "results/rescue/phase4b_target_regions.tsv",
+    "results/rescue/phase4b_miniprot_raw.gff",
+    "results/rescue/phase4b_miniprot.stderr.log",
+    "results/rescue/phase4b_genome_alignment_hits.tsv",
+    "results/rescue/phase4b_genome_validation_summary.tsv",
+]
+
+phase4c_review_targets = genome_validation_targets + [
+    "results/rescue/phase4c_rescue_domain_targets.tsv",
+    "results/domains/phase4c_rescue_queries.pfam.domtblout",
+    "results/domains/phase4c_rescue_queries.pfam.txt",
+    "results/rescue/phase4c_rescue_domain_integrity.tsv",
+    "results/rescue/phase4c_locus_review.tsv",
+    "results/rescue/phase4c_gene_review_summary.tsv",
+    "data/interim/annotation_rescue/tp53_targeted_forward_query.faa",
+    "data/interim/annotation_rescue/tp53_forward_hit_target_scaffolds.fna",
+    "results/rescue/tp53_forward_hit_target_regions.tsv",
+    "results/rescue/tp53_targeted_forward_miniprot_raw.gff",
+    "results/rescue/tp53_targeted_forward_miniprot.stderr.log",
+    "results/rescue/tp53_targeted_forward_alignment_hits.tsv",
+    "results/rescue/tp53_targeted_forward_search_summary.tsv",
+]
+
+phase4d_consolidation_targets = phase4c_review_targets + [
+    "results/evidence/phase4d_candidate_interpretation.tsv",
+    phase4d_integrated_output,
+]
+
+phase4e_locus_hardening_targets = phase4d_consolidation_targets + [
+    "results/rescue/phase4e_locus_manual_review.tsv",
+    "results/rescue/phase4e_gene_hardened_summary.tsv",
+    "results/evidence/phase4e_hardened_evidence.tsv",
+]
+
+phase5_repeat_context_targets = phase4e_locus_hardening_targets + [
+    "data/metadata/phase5_repeat_resource_status.tsv",
+    "results/repeats/phase5_repeat_features.tsv",
+    "results/repeats/phase5_candidate_locus_repeat_context.tsv",
+    "results/repeats/phase5_gene_repeat_context_summary.tsv",
+    "results/repeats/phase5c_repeatmasker_integrity.tsv",
+    "results/repeats/phase5c_locus_repeat_qc.tsv",
+    "results/repeats/phase5c_gene_repeat_qc_summary.tsv",
+    "results/evidence/phase5_repeat_context_evidence.tsv",
+    "results/evidence/integrated_evidence.tsv",
+    "reports/generated/phase5c_repeat_context_qc_report.md",
+    "reports/generated/phase5_repeat_context_report.md",
+]
+
+phase5b_repeat_annotation_plan_targets = [
+    "results/repeats/phase5b_repeat_annotation_preflight.tsv",
+    "results/repeats/phase5b_repeat_annotation_plan.tsv",
+    "data/metadata/phase5b_repeat_annotation_provenance.tsv",
+    "data/metadata/phase5b_repeat_output_inventory.tsv",
+]
+
+phase6_telomere_targets = phase5_repeat_context_targets + [
+    "results/telomere/phase6_telomeric_motif_scan.tsv",
+    "results/telomere/phase6_scaffold_end_enrichment.tsv",
+    "results/telomere/phase6_telomere_gene_audit.tsv",
+    "reports/generated/phase6_telomere_report.md",
+]
+
+phase7_rnaseq_readiness_targets = phase6_telomere_targets + [
+    "data/metadata/rnaseq_manifest.tsv",
+    "results/rnaseq/phase7_rnaseq_readiness.tsv",
+    "results/rnaseq/phase7_candidate_expression_plan.tsv",
+    "reports/generated/phase7_rnaseq_readiness_report.md",
+]
+
+phase7b_quantification_strategy_targets = phase7_rnaseq_readiness_targets + [
+    "results/rnaseq/phase7b_reference_quantification_strategy.tsv",
+    "results/rnaseq/phase7b_candidate_quantification_map.tsv",
+    "results/rnaseq/phase7b_quantification_run_plan.tsv",
+    "reports/generated/phase7b_quantification_strategy_report.md",
+]
+
+phase7c_expression_reference_targets = phase7b_quantification_strategy_targets + [
+    "data/interim/rnaseq/phase7c/smic_tokyo.annotation_transcripts.fna",
+    "data/interim/rnaseq/phase7c/smic_tokyo.tx2gene.tsv",
+    "results/rnaseq/phase7c_expression_reference_qc.tsv",
+    "results/rnaseq/phase7c_candidate_reference_validation.tsv",
+    "reports/generated/phase7c_expression_reference_report.md",
+]
+
+phase7d_rnaseq_quantification_targets = phase7c_expression_reference_targets + [
+    "results/rnaseq/phase7d_raw_read_intake.tsv",
+    "results/rnaseq/phase7d_fastq_qc.tsv",
+    "results/rnaseq/phase7d_salmon_preflight.tsv",
+    "results/rnaseq/phase7d_salmon_quant_summary.tsv",
+    "results/rnaseq/phase7d_candidate_expression_matrix.tsv",
+    "reports/generated/phase7d_rnaseq_quantification_report.md",
+]
+
+phase7e_expression_hardening_targets = phase7d_rnaseq_quantification_targets + [
+    "results/rnaseq/phase7e_run_qc_review.tsv",
+    "results/rnaseq/phase7e_candidate_expression_hardened.tsv",
+    "results/rnaseq/phase7e_parameter_review.tsv",
+    "reports/generated/phase7e_expression_hardening_report.md",
+]
+
+phase8a_expression_integration_targets = phase7e_expression_hardening_targets + [
+    "results/evidence/phase8a_expression_support_evidence.tsv",
+    "results/evidence/phase8a_expression_integration_audit.tsv",
+    "results/evidence/phase8a_integrated_evidence.tsv",
+    "reports/generated/phase8a_expression_evidence_report.md",
+]
+
+phase8b_final_evidence_scoring_targets = phase8a_expression_integration_targets + [
+    "results/evidence/phase8b_final_integrated_evidence.tsv",
+    "results/evidence/phase8b_tier_audit.tsv",
+    "results/evidence/phase8b_mechanism_summary.tsv",
+    "reports/generated/phase8b_final_evidence_report.md",
+]
+
+phase9_report_generation_targets = phase8b_final_evidence_scoring_targets + [
+    "reports/final/greenland_shark_longevity_phase9_report.md",
+    "results/reporting/phase9_figure_manifest.tsv",
+    "results/reporting/phase9_key_findings.tsv",
+    "reports/figures/data/phase9_evidence_tier_summary.tsv",
+    "reports/figures/data/phase9_reporting_class_summary.tsv",
+    "reports/figures/data/phase9_mechanism_evidence_matrix.tsv",
+    "reports/figures/data/phase9_artifact_context_summary.tsv",
+    "reports/figures/phase9_evidence_tier_summary.svg",
+    "reports/figures/phase9_reporting_class_summary.svg",
+    "reports/figures/phase9_mechanism_evidence_matrix.svg",
+    "reports/figures/phase9_artifact_context_summary.svg",
+]
+
+phase9_report_package_audit_targets = phase9_report_generation_targets + [
+    "results/reporting/phase9_report_package_audit.tsv",
+    "results/reporting/phase9_public_repository_readiness.tsv",
+    "reports/final/phase9_report_package_audit.md",
+]
+
+if mode == "metadata_only":
+    final_targets = metadata_targets
+elif mode == "demo":
+    final_targets = demo_targets
+elif mode == "reference_only":
+    final_targets = reference_targets
+elif mode == "orthology":
+    final_targets = orthology_targets
+elif mode == "orthology_postprocess":
+    final_targets = orthology_postprocess_targets
+elif mode == "domain_validation":
+    final_targets = domain_validation_targets
+elif mode == "annotation_rescue":
+    final_targets = annotation_rescue_targets
+elif mode == "genome_validation":
+    final_targets = genome_validation_targets
+elif mode == "phase4c_review":
+    final_targets = phase4c_review_targets
+elif mode == "phase4d_consolidation":
+    final_targets = phase4d_consolidation_targets
+elif mode == "phase4e_locus_hardening":
+    final_targets = phase4e_locus_hardening_targets
+elif mode == "phase5_repeat_context":
+    final_targets = phase5_repeat_context_targets
+elif mode == "phase5c_repeat_qc":
+    final_targets = phase5_repeat_context_targets
+elif mode == "phase6_telomere":
+    final_targets = phase6_telomere_targets
+elif mode == "phase7_rnaseq_readiness":
+    final_targets = phase7_rnaseq_readiness_targets
+elif mode == "phase7b_quantification_strategy":
+    final_targets = phase7b_quantification_strategy_targets
+elif mode == "phase7c_expression_reference":
+    final_targets = phase7c_expression_reference_targets
+elif mode == "phase7d_rnaseq_quantification":
+    final_targets = phase7d_rnaseq_quantification_targets
+elif mode == "phase7e_expression_hardening":
+    final_targets = phase7e_expression_hardening_targets
+elif mode == "phase8a_expression_integration":
+    final_targets = phase8a_expression_integration_targets
+elif mode == "phase8b_final_evidence_scoring":
+    final_targets = phase8b_final_evidence_scoring_targets
+elif mode == "phase9_report_generation":
+    final_targets = phase9_report_generation_targets
+elif mode == "phase9_report_package_audit":
+    final_targets = phase9_report_package_audit_targets
+elif mode == "phase5b_repeat_annotation_plan":
+    final_targets = phase5b_repeat_annotation_plan_targets
+elif mode == "full":
+    final_targets = ["results/full/not_implemented.txt"]
+else:
+    raise ValueError(f"Unsupported workflow_mode: {mode}")
+
+
+rule all:
+    input:
+        final_targets
+
+
+rule metadata:
+    input:
+        "config/config.yaml"
+    output:
+        "data/metadata/data_manifest.tsv",
+        "data/metadata/species_manifest.tsv",
+        "data/metadata/resource_status.tsv"
+    shell:
+        "python -m greenland_shark_longevity.metadata --config {input} --output-dir data/metadata"
+
+
+rule validate_candidate_panels:
+    input:
+        "config/candidate_panels.yaml"
+    output:
+        "results/validation/candidate_panel_validation.tsv"
+    shell:
+        "python -m greenland_shark_longevity.candidate_panels --input {input} --output {output}"
+
+
+rule assembly_qc:
+    input:
+        config["demo_inputs"]["assembly_fasta"]
+    output:
+        "results/qc/assembly_qc.tsv"
+    shell:
+        "python -m greenland_shark_longevity.fasta --kind assembly --input {input} --output {output} --resource-id DEMO_ONLY_NOT_BIOLOGICAL_EVIDENCE"
+
+
+rule protein_qc:
+    input:
+        config["demo_inputs"]["protein_fasta"]
+    output:
+        "results/qc/protein_qc.tsv"
+    shell:
+        "python -m greenland_shark_longevity.fasta --kind protein --input {input} --output {output} --resource-id DEMO_ONLY_NOT_BIOLOGICAL_EVIDENCE"
+
+
+if mode in {"orthology", "orthology_postprocess", "domain_validation", "annotation_rescue", "genome_validation", "phase4c_review", "phase4d_consolidation", "phase4e_locus_hardening", "phase5_repeat_context", "phase5c_repeat_qc", "phase6_telomere", "phase7_rnaseq_readiness", "phase7b_quantification_strategy", "phase7c_expression_reference", "phase7d_rnaseq_quantification", "phase7e_expression_hardening", "phase8a_expression_integration", "phase8b_final_evidence_scoring", "phase9_report_generation", "phase9_report_package_audit"}:
+    rule candidate_integration:
+        input:
+            candidate_panels="config/candidate_panels.yaml",
+            annotation_gff=config["reference_inputs"]["annotation_gff"],
+            orthogroup_gene_counts_long="results/orthology/orthogroup_gene_counts_long.tsv",
+            gene_coordinates="results/orthology/reference_gene_coordinates.tsv",
+            orthofinder_input_manifest="results/orthology/orthofinder_input_manifest.tsv"
+        output:
+            copy_number="results/orthology/candidate_copy_number.tsv",
+            duplication_audit="results/orthology/candidate_duplication_audit.tsv"
+        shell:
+            "python -m greenland_shark_longevity.candidate_orthofinder "
+            "--candidate-panels {input.candidate_panels:q} "
+            "--annotation-gff {input.annotation_gff:q} "
+            "--orthogroup-gene-counts-long {input.orthogroup_gene_counts_long:q} "
+            "--gene-coordinates {input.gene_coordinates:q} "
+            "--orthofinder-input-manifest {input.orthofinder_input_manifest:q} "
+            "--copy-number-output {output.copy_number:q} "
+            "--duplication-audit-output {output.duplication_audit:q}"
+else:
+    rule candidate_integration:
+        input:
+            candidate_panels="config/candidate_panels.yaml",
+            orthogroups=config["demo_inputs"]["orthogroups"],
+            gene_coordinates=config["demo_inputs"]["gene_coordinates"],
+            domains=config["demo_inputs"]["domains"],
+            expression_support=config["demo_inputs"]["expression_support"]
+        output:
+            copy_number="results/orthology/candidate_copy_number.tsv",
+            duplication_audit="results/orthology/candidate_duplication_audit.tsv"
+        shell:
+            "python -m greenland_shark_longevity.orthology "
+            "--candidate-panels {input.candidate_panels} "
+            "--orthogroups {input.orthogroups} "
+            "--gene-coordinates {input.gene_coordinates} "
+            "--domains {input.domains} "
+            "--expression-support {input.expression_support} "
+            "--copy-number-output {output.copy_number} "
+            "--duplication-audit-output {output.duplication_audit} "
+            "--species-id smic --demo-only true"
+
+
+rule evidence_scoring:
+    input:
+        "results/orthology/candidate_duplication_audit.tsv"
+    output:
+        base_evidence_output
+    shell:
+        "python -m greenland_shark_longevity.evidence --duplication-audit {input} --output {output}"
+
+
+if mode in phase4d_like_modes:
+    rule phase4d_consolidation:
+        input:
+            base_evidence=base_evidence_output,
+            gene_summary="results/rescue/phase4c_gene_review_summary.tsv",
+            locus_review="results/rescue/phase4c_locus_review.tsv",
+            tp53_summary="results/rescue/tp53_targeted_forward_search_summary.tsv"
+        output:
+            interpretation="results/evidence/phase4d_candidate_interpretation.tsv",
+            integrated=phase4d_integrated_output
+        shell:
+            "python -m greenland_shark_longevity.phase4d_consolidation "
+            "--base-evidence {input.base_evidence:q} "
+            "--phase4c-gene-summary {input.gene_summary:q} "
+            "--phase4c-locus-review {input.locus_review:q} "
+            "--tp53-summary {input.tp53_summary:q} "
+            "--interpretation-output {output.interpretation:q} "
+            "--integrated-output {output.integrated:q}"
+
+
+if mode in {"phase4e_locus_hardening", "phase5_repeat_context", "phase5c_repeat_qc", "phase6_telomere", "phase7_rnaseq_readiness", "phase7b_quantification_strategy", "phase7c_expression_reference", "phase7d_rnaseq_quantification", "phase7e_expression_hardening", "phase8a_expression_integration", "phase8b_final_evidence_scoring", "phase9_report_generation", "phase9_report_package_audit"}:
+    rule phase4e_locus_hardening:
+        input:
+            phase4c_locus="results/rescue/phase4c_locus_review.tsv",
+            domain_integrity="results/rescue/phase4c_rescue_domain_integrity.tsv",
+            tp53_alignment_hits="results/rescue/tp53_targeted_forward_alignment_hits.tsv",
+            tp53_target_regions="results/rescue/tp53_forward_hit_target_regions.tsv",
+            annotation_gff=config["phase4e_locus_hardening"]["annotation_gff"]
+        output:
+            locus="results/rescue/phase4e_locus_manual_review.tsv",
+            summary="results/rescue/phase4e_gene_hardened_summary.tsv",
+            evidence="results/evidence/phase4e_hardened_evidence.tsv"
+        shell:
+            "python -m greenland_shark_longevity.phase4e_locus_hardening "
+            "--phase4c-locus-review {input.phase4c_locus:q} "
+            "--domain-integrity {input.domain_integrity:q} "
+            "--tp53-alignment-hits {input.tp53_alignment_hits:q} "
+            "--tp53-target-regions {input.tp53_target_regions:q} "
+            "--annotation-gff {input.annotation_gff:q} "
+            "--locus-output {output.locus:q} "
+            "--summary-output {output.summary:q} "
+            "--evidence-output {output.evidence:q}"
+
+
+if mode in {"phase5_repeat_context", "phase5c_repeat_qc", "phase6_telomere", "phase7_rnaseq_readiness", "phase7b_quantification_strategy", "phase7c_expression_reference", "phase7d_rnaseq_quantification", "phase7e_expression_hardening", "phase8a_expression_integration", "phase8b_final_evidence_scoring", "phase9_report_generation", "phase9_report_package_audit"}:
+    rule phase5_repeat_context:
+        input:
+            config="config/config.yaml",
+            candidate_loci=config["phase5_repeat_context"]["candidate_loci"],
+            figshare_inventory=config["phase5_repeat_context"]["figshare_inventory"]
+        output:
+            resource_status=config["phase5_repeat_context"]["resource_status_output"],
+            repeat_features=config["phase5_repeat_context"]["repeat_features_output"],
+            locus_context=config["phase5_repeat_context"]["locus_context_output"],
+            gene_summary=config["phase5_repeat_context"]["gene_summary_output"]
+        shell:
+            "python -m greenland_shark_longevity.phase5_repeat_context "
+            "--config {input.config:q} "
+            "--candidate-loci {input.candidate_loci:q} "
+            "--figshare-inventory {input.figshare_inventory:q} "
+            "--resource-status-output {output.resource_status:q} "
+            "--repeat-features-output {output.repeat_features:q} "
+            "--locus-context-output {output.locus_context:q} "
+            "--gene-summary-output {output.gene_summary:q}"
+
+
+    rule phase5c_repeat_qc:
+        input:
+            config="config/config.yaml",
+            candidate_loci=config["phase5_repeat_context"]["candidate_loci"],
+            phase5_locus_context=config["phase5c_repeat_qc"]["phase5_locus_context"],
+            phase5b_inventory=config["phase5c_repeat_qc"]["phase5b_inventory"]
+        output:
+            integrity=config["phase5c_repeat_qc"]["integrity_output"],
+            locus_qc=config["phase5c_repeat_qc"]["locus_qc_output"],
+            gene_qc=config["phase5c_repeat_qc"]["gene_qc_output"],
+            report=config["phase5c_repeat_qc"]["report_output"]
+        shell:
+            "python -m greenland_shark_longevity.phase5c_repeat_qc "
+            "--config {input.config:q} "
+            "--candidate-loci {input.candidate_loci:q} "
+            "--phase5-locus-context {input.phase5_locus_context:q} "
+            "--phase5b-inventory {input.phase5b_inventory:q} "
+            "--integrity-output {output.integrity:q} "
+            "--locus-qc-output {output.locus_qc:q} "
+            "--gene-qc-output {output.gene_qc:q} "
+            "--report-output {output.report:q}"
+
+
+    rule phase5_evidence_integration:
+        input:
+            base_evidence=config["phase5_evidence_integration"]["base_evidence"],
+            phase4e_evidence=config["phase5_evidence_integration"]["phase4e_evidence"],
+            phase5_gene_summary=config["phase5_evidence_integration"]["phase5_gene_summary"],
+            phase5c_gene_qc=config["phase5_evidence_integration"]["phase5c_gene_qc"]
+        output:
+            phase5_evidence=config["phase5_evidence_integration"]["phase5_evidence_output"],
+            integrated=config["phase5_evidence_integration"]["integrated_output"],
+            report=config["phase5_evidence_integration"]["report_output"]
+        shell:
+            "python -m greenland_shark_longevity.phase5_evidence_integration "
+            "--base-evidence {input.base_evidence:q} "
+            "--phase4e-evidence {input.phase4e_evidence:q} "
+            "--phase5-gene-summary {input.phase5_gene_summary:q} "
+            "--phase5c-gene-qc {input.phase5c_gene_qc:q} "
+            "--phase5-evidence-output {output.phase5_evidence:q} "
+            "--integrated-output {output.integrated:q} "
+            "--report-output {output.report:q}"
+
+
+if mode in {"phase6_telomere", "phase7_rnaseq_readiness", "phase7b_quantification_strategy", "phase7c_expression_reference", "phase7d_rnaseq_quantification", "phase7e_expression_hardening", "phase8a_expression_integration", "phase8b_final_evidence_scoring", "phase9_report_generation", "phase9_report_package_audit"}:
+    rule phase6_telomere:
+        input:
+            config="config/config.yaml",
+            integrated="results/evidence/integrated_evidence.tsv",
+            candidate_copy_number=config["phase6_telomere"]["candidate_copy_number"],
+            candidate_duplication_audit=config["phase6_telomere"]["candidate_duplication_audit"],
+            genome=config["phase6_telomere"]["genome_fasta"],
+            candidate_panel=config["phase6_telomere"]["candidate_panel"]
+        output:
+            motif_scan=config["phase6_telomere"]["motif_scan_output"],
+            enrichment=config["phase6_telomere"]["scaffold_end_enrichment_output"],
+            gene_audit=config["phase6_telomere"]["telomere_gene_audit_output"],
+            report=config["phase6_telomere"]["report_output"]
+        shell:
+            "python -m greenland_shark_longevity.phase6_telomere "
+            "--config {input.config:q} "
+            "--motif-scan-output {output.motif_scan:q} "
+            "--enrichment-output {output.enrichment:q} "
+            "--gene-audit-output {output.gene_audit:q} "
+            "--report-output {output.report:q}"
+
+
+if mode in {"phase7_rnaseq_readiness", "phase7b_quantification_strategy", "phase7c_expression_reference", "phase7d_rnaseq_quantification", "phase7e_expression_hardening", "phase8a_expression_integration", "phase8b_final_evidence_scoring", "phase9_report_generation", "phase9_report_package_audit"}:
+    rule phase7_rnaseq_readiness:
+        input:
+            config="config/config.yaml",
+            candidate_panel=config["phase7_rnaseq"]["candidate_panel"],
+            phase6_gene_audit=config["phase6_telomere"]["telomere_gene_audit_output"]
+        output:
+            manifest=config["phase7_rnaseq"]["manifest_output"],
+            readiness=config["phase7_rnaseq"]["readiness_output"],
+            expression_plan=config["phase7_rnaseq"]["expression_plan_output"],
+            report=config["phase7_rnaseq"]["report_output"]
+        shell:
+            "python -m greenland_shark_longevity.phase7_rnaseq "
+            "--config {input.config:q} "
+            "--manifest-output {output.manifest:q} "
+            "--readiness-output {output.readiness:q} "
+            "--expression-plan-output {output.expression_plan:q} "
+            "--report-output {output.report:q}"
+
+
+if mode in {"phase7b_quantification_strategy", "phase7c_expression_reference", "phase7d_rnaseq_quantification", "phase7e_expression_hardening", "phase8a_expression_integration", "phase8b_final_evidence_scoring", "phase9_report_generation", "phase9_report_package_audit"}:
+    rule phase7b_quantification_strategy:
+        input:
+            config="config/config.yaml",
+            phase7a_manifest=config["phase7b_expression_quantification_strategy"]["phase7a_manifest"],
+            phase7a_readiness=config["phase7b_expression_quantification_strategy"]["phase7a_readiness"],
+            phase7a_candidate_plan=config["phase7b_expression_quantification_strategy"]["phase7a_candidate_expression_plan"],
+            candidate_copy_number=config["phase7b_expression_quantification_strategy"]["candidate_copy_number"],
+            candidate_isoform_audit=config["phase7b_expression_quantification_strategy"]["candidate_isoform_audit"],
+            phase4e_gene_summary=config["phase7b_expression_quantification_strategy"]["phase4e_gene_summary"],
+            phase4e_locus_review=config["phase7b_expression_quantification_strategy"]["phase4e_locus_review"],
+            cds_fasta=config["phase7b_expression_quantification_strategy"]["cds_fasta"]
+        output:
+            reference_strategy=config["phase7b_expression_quantification_strategy"]["reference_strategy_output"],
+            candidate_quant_map=config["phase7b_expression_quantification_strategy"]["candidate_quant_map_output"],
+            run_plan=config["phase7b_expression_quantification_strategy"]["run_plan_output"],
+            report=config["phase7b_expression_quantification_strategy"]["report_output"]
+        shell:
+            "python -m greenland_shark_longevity.phase7b_quantification_strategy "
+            "--config {input.config:q} "
+            "--reference-strategy-output {output.reference_strategy:q} "
+            "--candidate-quant-map-output {output.candidate_quant_map:q} "
+            "--run-plan-output {output.run_plan:q} "
+            "--report-output {output.report:q}"
+
+
+if mode in {"phase7c_expression_reference", "phase7d_rnaseq_quantification", "phase7e_expression_hardening", "phase8a_expression_integration", "phase8b_final_evidence_scoring", "phase9_report_generation", "phase9_report_package_audit"}:
+    rule phase7c_expression_reference:
+        input:
+            config="config/config.yaml",
+            candidate_quant_map=config["phase7c_expression_reference_validation"]["phase7b_candidate_quant_map"],
+            annotation_gff=config["phase7c_expression_reference_validation"]["annotation_gff"],
+            genome_fasta=config["phase7c_expression_reference_validation"]["genome_fasta"]
+        output:
+            transcript_fasta=config["phase7c_expression_reference_validation"]["transcript_fasta_output"],
+            tx2gene=config["phase7c_expression_reference_validation"]["tx2gene_output"],
+            reference_qc=config["phase7c_expression_reference_validation"]["reference_qc_output"],
+            candidate_validation=config["phase7c_expression_reference_validation"]["candidate_reference_validation_output"],
+            report=config["phase7c_expression_reference_validation"]["report_output"]
+        shell:
+            "python -m greenland_shark_longevity.phase7c_expression_reference "
+            "--config {input.config:q} "
+            "--transcript-fasta-output {output.transcript_fasta:q} "
+            "--tx2gene-output {output.tx2gene:q} "
+            "--reference-qc-output {output.reference_qc:q} "
+            "--candidate-validation-output {output.candidate_validation:q} "
+            "--report-output {output.report:q}"
+
+
+if mode in {"phase7d_rnaseq_quantification", "phase7e_expression_hardening", "phase8a_expression_integration", "phase8b_final_evidence_scoring", "phase9_report_generation", "phase9_report_package_audit"}:
+    rule phase7d_rnaseq_quantification:
+        input:
+            config="config/config.yaml",
+            manifest=config["phase7d_rnaseq_quantification"]["phase7a_manifest"],
+            readiness=config["phase7d_rnaseq_quantification"]["phase7a_readiness"],
+            tx2gene=config["phase7d_rnaseq_quantification"]["phase7c_tx2gene"],
+            candidate_validation=config["phase7d_rnaseq_quantification"]["phase7c_candidate_reference_validation"],
+            transcript_fasta=config["phase7d_rnaseq_quantification"]["transcript_fasta"]
+        output:
+            raw_read_intake=config["phase7d_rnaseq_quantification"]["raw_read_intake_output"],
+            fastq_qc=config["phase7d_rnaseq_quantification"]["fastq_qc_output"],
+            salmon_preflight=config["phase7d_rnaseq_quantification"]["salmon_preflight_output"],
+            salmon_quant_summary=config["phase7d_rnaseq_quantification"]["salmon_quant_summary_output"],
+            candidate_expression_matrix=config["phase7d_rnaseq_quantification"]["candidate_expression_matrix_output"],
+            report=config["phase7d_rnaseq_quantification"]["report_output"]
+        shell:
+            "python -m greenland_shark_longevity.phase7d_rnaseq_quantification "
+            "--config {input.config:q} "
+            "--raw-read-intake-output {output.raw_read_intake:q} "
+            "--fastq-qc-output {output.fastq_qc:q} "
+            "--salmon-preflight-output {output.salmon_preflight:q} "
+            "--salmon-quant-summary-output {output.salmon_quant_summary:q} "
+            "--candidate-expression-matrix-output {output.candidate_expression_matrix:q} "
+            "--report-output {output.report:q}"
+
+
+if mode in {"phase7e_expression_hardening", "phase8a_expression_integration", "phase8b_final_evidence_scoring", "phase9_report_generation", "phase9_report_package_audit"}:
+    rule phase7e_expression_hardening:
+        input:
+            config="config/config.yaml",
+            salmon_quant_summary=config["phase7e_expression_hardening"]["phase7d_salmon_quant_summary"],
+            fastq_qc=config["phase7e_expression_hardening"]["phase7d_fastq_qc"],
+            candidate_expression_matrix=config["phase7e_expression_hardening"]["phase7d_candidate_expression_matrix"],
+            phase7c_candidate_reference_validation=config["phase7e_expression_hardening"]["phase7c_candidate_reference_validation"],
+            candidate_duplication_audit=config["phase7e_expression_hardening"]["candidate_duplication_audit"],
+            phase4e_gene_hardened_summary=config["phase7e_expression_hardening"]["phase4e_gene_hardened_summary"],
+            phase5c_gene_repeat_qc_summary=config["phase7e_expression_hardening"]["phase5c_gene_repeat_qc_summary"]
+        output:
+            run_qc=config["phase7e_expression_hardening"]["run_qc_output"],
+            candidate=config["phase7e_expression_hardening"]["candidate_output"],
+            parameter_review=config["phase7e_expression_hardening"]["parameter_review_output"],
+            report=config["phase7e_expression_hardening"]["report_output"]
+        shell:
+            "python -m greenland_shark_longevity.phase7e_expression_hardening "
+            "--config {input.config:q} "
+            "--run-qc-output {output.run_qc:q} "
+            "--candidate-output {output.candidate:q} "
+            "--parameter-review-output {output.parameter_review:q} "
+            "--report-output {output.report:q}"
+
+
+if mode in {"phase8a_expression_integration", "phase8b_final_evidence_scoring", "phase9_report_generation", "phase9_report_package_audit"}:
+    rule phase8a_expression_integration:
+        input:
+            config="config/config.yaml",
+            base_evidence=config["phase8a_expression_integration"]["base_evidence"],
+            candidate_expression=config["phase8a_expression_integration"]["phase7e_candidate_expression"],
+            run_qc=config["phase8a_expression_integration"]["phase7e_run_qc"],
+            parameter_review=config["phase8a_expression_integration"]["phase7e_parameter_review"]
+        output:
+            expression_evidence=config["phase8a_expression_integration"]["expression_evidence_output"],
+            audit=config["phase8a_expression_integration"]["integration_audit_output"],
+            integrated=config["phase8a_expression_integration"]["integrated_output"],
+            report=config["phase8a_expression_integration"]["report_output"]
+        shell:
+            "python -m greenland_shark_longevity.phase8a_expression_evidence_integration "
+            "--config {input.config:q} "
+            "--expression-evidence-output {output.expression_evidence:q} "
+            "--integration-audit-output {output.audit:q} "
+            "--integrated-output {output.integrated:q} "
+            "--report-output {output.report:q}"
+
+
+if mode in {"phase8b_final_evidence_scoring", "phase9_report_generation", "phase9_report_package_audit"}:
+    rule phase8b_final_evidence_scoring:
+        input:
+            config="config/config.yaml",
+            phase8a_integrated=config["phase8b_final_evidence_scoring"]["phase8a_integrated_evidence"],
+            phase8a_audit=config["phase8b_final_evidence_scoring"]["phase8a_expression_integration_audit"],
+            phase4e_summary=config["phase8b_final_evidence_scoring"]["phase4e_gene_hardened_summary"],
+            phase5c_summary=config["phase8b_final_evidence_scoring"]["phase5c_gene_repeat_qc_summary"],
+            phase6_gene_audit=config["phase8b_final_evidence_scoring"]["phase6_telomere_gene_audit"]
+        output:
+            final_evidence=config["phase8b_final_evidence_scoring"]["final_evidence_output"],
+            tier_audit=config["phase8b_final_evidence_scoring"]["tier_audit_output"],
+            mechanism_summary=config["phase8b_final_evidence_scoring"]["mechanism_summary_output"],
+            report=config["phase8b_final_evidence_scoring"]["report_output"]
+        shell:
+            "python -m greenland_shark_longevity.phase8b_final_evidence_scoring "
+            "--config {input.config:q} "
+            "--final-evidence-output {output.final_evidence:q} "
+            "--tier-audit-output {output.tier_audit:q} "
+            "--mechanism-summary-output {output.mechanism_summary:q} "
+            "--report-output {output.report:q}"
+
+
+if mode in {"phase9_report_generation", "phase9_report_package_audit"}:
+    rule phase9_report_generation:
+        input:
+            config="config/config.yaml",
+            final_evidence=config["phase9_report_generation"]["phase8b_final_evidence"],
+            tier_audit=config["phase9_report_generation"]["phase8b_tier_audit"],
+            mechanism_summary=config["phase9_report_generation"]["phase8b_mechanism_summary"]
+        output:
+            report=config["phase9_report_generation"]["report_output"],
+            figure_manifest=config["phase9_report_generation"]["figure_manifest_output"],
+            key_findings=config["phase9_report_generation"]["key_findings_output"],
+            tier_data=config["phase9_report_generation"]["tier_data_output"],
+            class_data=config["phase9_report_generation"]["class_data_output"],
+            mechanism_matrix_data=config["phase9_report_generation"]["mechanism_matrix_data_output"],
+            artifact_context_data=config["phase9_report_generation"]["artifact_context_data_output"],
+            tier_figure=config["phase9_report_generation"]["tier_figure_output"],
+            class_figure=config["phase9_report_generation"]["class_figure_output"],
+            mechanism_matrix_figure=config["phase9_report_generation"]["mechanism_matrix_figure_output"],
+            artifact_context_figure=config["phase9_report_generation"]["artifact_context_figure_output"]
+        shell:
+            "python -m greenland_shark_longevity.phase9_report_generation "
+            "--config {input.config:q} "
+            "--report-output {output.report:q} "
+            "--figure-manifest-output {output.figure_manifest:q} "
+            "--key-findings-output {output.key_findings:q} "
+            "--tier-data-output {output.tier_data:q} "
+            "--class-data-output {output.class_data:q} "
+            "--mechanism-matrix-data-output {output.mechanism_matrix_data:q} "
+            "--artifact-context-data-output {output.artifact_context_data:q} "
+            "--tier-figure-output {output.tier_figure:q} "
+            "--class-figure-output {output.class_figure:q} "
+            "--mechanism-matrix-figure-output {output.mechanism_matrix_figure:q} "
+            "--artifact-context-figure-output {output.artifact_context_figure:q}"
+
+
+if mode == "phase9_report_package_audit":
+    rule phase9_report_package_audit:
+        input:
+            config="config/config.yaml",
+            report=config["phase9_report_package_audit"]["phase9_report"],
+            figure_manifest=config["phase9_report_package_audit"]["phase9_figure_manifest"],
+            key_findings=config["phase9_report_package_audit"]["phase9_key_findings"]
+        output:
+            package_audit=config["phase9_report_package_audit"]["package_audit_output"],
+            release_readiness=config["phase9_report_package_audit"]["release_readiness_output"],
+            report=config["phase9_report_package_audit"]["report_output"]
+        shell:
+            "python -m greenland_shark_longevity.phase9_package_audit "
+            "--config {input.config:q} "
+            "--package-audit-output {output.package_audit:q} "
+            "--release-readiness-output {output.release_readiness:q} "
+            "--report-output {output.report:q}"
+
+
+if mode == "phase5b_repeat_annotation_plan":
+    rule phase5b_repeat_annotation_plan:
+        input:
+            config="config/config.yaml"
+        output:
+            preflight=config["phase5b_repeat_annotation"]["preflight_output"],
+            plan=config["phase5b_repeat_annotation"]["plan_output"],
+            provenance=config["phase5b_repeat_annotation"]["provenance_output"],
+            inventory=config["phase5b_repeat_annotation"]["output_inventory"]
+        shell:
+            "python -m greenland_shark_longevity.phase5b_repeat_annotation "
+            "--config {input.config:q} "
+            "--preflight-output {output.preflight:q} "
+            "--plan-output {output.plan:q} "
+            "--provenance-output {output.provenance:q} "
+            "--output-inventory {output.inventory:q}"
+
+
+rule candidate_validation:
+    input:
+        candidate_panels="config/candidate_panels.yaml",
+        candidate_copy_number="results/orthology/candidate_copy_number.tsv",
+        duplication_audit="results/orthology/candidate_duplication_audit.tsv",
+        protein_fasta=config["reference_inputs"]["protein_fasta"]
+    params:
+        high_priority_genes=" ".join(config.get("candidate_validation", {}).get("high_priority_rescue_genes", []))
+    output:
+        representative_fasta="data/interim/candidate_validation/representative_candidate_proteins.faa",
+        isoform_audit="results/validation/candidate_isoform_audit.tsv",
+        domain_targets="results/validation/domain_check_targets.tsv",
+        rescue_targets="results/validation/high_priority_rescue_targets.tsv"
+    shell:
+        "python -m greenland_shark_longevity.candidate_validation "
+        "--candidate-panels {input.candidate_panels:q} "
+        "--candidate-copy-number {input.candidate_copy_number:q} "
+        "--duplication-audit {input.duplication_audit:q} "
+        "--protein-fasta {input.protein_fasta:q} "
+        "--representative-fasta-output {output.representative_fasta:q} "
+        "--isoform-audit-output {output.isoform_audit:q} "
+        "--domain-targets-output {output.domain_targets:q} "
+        "--rescue-targets-output {output.rescue_targets:q} "
+        "--high-priority-genes {params.high_priority_genes}"
+
+
+rule hmmer_pfam_preflight:
+    input:
+        config="config/config.yaml",
+        representative_fasta="data/interim/candidate_validation/representative_candidate_proteins.faa"
+    output:
+        "results/validation/hmmer_pfam_preflight.tsv"
+    shell:
+        "python -m greenland_shark_longevity.hmmer_pfam preflight "
+        "--config {input.config:q} "
+        "--input-fasta {input.representative_fasta:q} "
+        "--output {output:q}"
+
+
+rule hmmer_pfam_run:
+    input:
+        config="config/config.yaml",
+        representative_fasta="data/interim/candidate_validation/representative_candidate_proteins.faa",
+        preflight="results/validation/hmmer_pfam_preflight.tsv"
+    output:
+        domtblout="results/domains/representative_candidate_proteins.pfam.domtblout",
+        text="results/domains/representative_candidate_proteins.pfam.txt"
+    threads:
+        config.get("domain_validation", {}).get("threads", 1)
+    shell:
+        "python -m greenland_shark_longevity.hmmer_pfam run "
+        "--config {input.config:q} "
+        "--input-fasta {input.representative_fasta:q} "
+        "--domtblout-output {output.domtblout:q} "
+        "--text-output {output.text:q}"
+
+
+rule candidate_domain_integrity:
+    input:
+        config="config/config.yaml",
+        domain_targets="results/validation/domain_check_targets.tsv",
+        domtblout="results/domains/representative_candidate_proteins.pfam.domtblout"
+    output:
+        "results/validation/candidate_domain_integrity.tsv"
+    shell:
+        "python -m greenland_shark_longevity.hmmer_pfam parse "
+        "--config {input.config:q} "
+        "--domain-targets {input.domain_targets:q} "
+        "--domtblout {input.domtblout:q} "
+        "--output {output:q}"
+
+
+rule phase4_annotation_rescue:
+    input:
+        config="config/config.yaml",
+        rescue_targets="results/validation/high_priority_rescue_targets.tsv",
+        orthofinder_input_manifest="results/orthology/orthofinder_input_manifest.tsv",
+        gene_coordinates="results/orthology/reference_gene_coordinates.tsv",
+        domain_integrity="results/validation/candidate_domain_integrity.tsv"
+    output:
+        query_inventory="results/rescue/phase4_rescue_query_inventory.tsv",
+        forward_hits="results/rescue/phase4_forward_hits.tsv",
+        reciprocal_hits="results/rescue/phase4_reciprocal_hits.tsv",
+        summary="results/rescue/phase4_annotation_rescue_summary.tsv",
+        genome_plan="results/rescue/phase4_genome_rescue_plan.tsv",
+        candidate_fasta="data/interim/annotation_rescue/phase4_rescue_candidate_proteins.faa"
+    shell:
+        "python -m greenland_shark_longevity.annotation_rescue "
+        "--config {input.config:q} "
+        "--rescue-targets {input.rescue_targets:q} "
+        "--orthofinder-input-manifest {input.orthofinder_input_manifest:q} "
+        "--gene-coordinates {input.gene_coordinates:q} "
+        "--query-inventory-output {output.query_inventory:q} "
+        "--forward-hits-output {output.forward_hits:q} "
+        "--reciprocal-hits-output {output.reciprocal_hits:q} "
+        "--summary-output {output.summary:q} "
+        "--genome-plan-output {output.genome_plan:q} "
+        "--candidate-fasta-output {output.candidate_fasta:q}"
+
+
+rule phase4b_genome_validation:
+    input:
+        config="config/config.yaml",
+        phase4_summary="results/rescue/phase4_annotation_rescue_summary.tsv",
+        query_inventory="results/rescue/phase4_rescue_query_inventory.tsv",
+        rescue_candidate_fasta="data/interim/annotation_rescue/phase4_rescue_candidate_proteins.faa"
+    output:
+        preflight="results/rescue/phase4b_miniprot_preflight.tsv",
+        query_fasta="data/interim/annotation_rescue/phase4b_miniprot_queries.faa",
+        query_table="data/interim/annotation_rescue/phase4b_miniprot_queries.tsv",
+        target_fasta="data/interim/annotation_rescue/phase4b_target_scaffolds.fna",
+        target_regions="results/rescue/phase4b_target_regions.tsv",
+        raw_gff="results/rescue/phase4b_miniprot_raw.gff",
+        stderr_log="results/rescue/phase4b_miniprot.stderr.log",
+        alignment_hits="results/rescue/phase4b_genome_alignment_hits.tsv",
+        summary="results/rescue/phase4b_genome_validation_summary.tsv"
+    threads:
+        config.get("phase4b_genome_validation", {}).get("threads", 1)
+    shell:
+        "python -m greenland_shark_longevity.genome_validation "
+        "--config {input.config:q} "
+        "--phase4-summary {input.phase4_summary:q} "
+        "--query-inventory {input.query_inventory:q} "
+        "--rescue-candidate-fasta {input.rescue_candidate_fasta:q} "
+        "--query-fasta-output {output.query_fasta:q} "
+        "--target-fasta-output {output.target_fasta:q} "
+        "--target-regions-output {output.target_regions:q} "
+        "--preflight-output {output.preflight:q} "
+        "--raw-gff-output {output.raw_gff:q} "
+        "--stderr-log-output {output.stderr_log:q} "
+        "--alignment-hits-output {output.alignment_hits:q} "
+        "--summary-output {output.summary:q}"
+
+
+rule phase4c_rescue_domain_targets:
+    input:
+        query_table="data/interim/annotation_rescue/phase4b_miniprot_queries.tsv",
+        query_fasta="data/interim/annotation_rescue/phase4b_miniprot_queries.faa"
+    output:
+        "results/rescue/phase4c_rescue_domain_targets.tsv"
+    shell:
+        "python -m greenland_shark_longevity.phase4c_locus_review domain-targets "
+        "--query-table {input.query_table:q} "
+        "--query-fasta {input.query_fasta:q} "
+        "--output {output:q}"
+
+
+rule phase4c_rescue_hmmer_run:
+    input:
+        config="config/config.yaml",
+        query_fasta="data/interim/annotation_rescue/phase4b_miniprot_queries.faa",
+        targets="results/rescue/phase4c_rescue_domain_targets.tsv"
+    output:
+        domtblout="results/domains/phase4c_rescue_queries.pfam.domtblout",
+        text="results/domains/phase4c_rescue_queries.pfam.txt"
+    threads:
+        config.get("domain_validation", {}).get("threads", 1)
+    shell:
+        "python -m greenland_shark_longevity.hmmer_pfam run "
+        "--config {input.config:q} "
+        "--input-fasta {input.query_fasta:q} "
+        "--domtblout-output {output.domtblout:q} "
+        "--text-output {output.text:q}"
+
+
+rule phase4c_rescue_domain_integrity:
+    input:
+        config="config/config.yaml",
+        targets="results/rescue/phase4c_rescue_domain_targets.tsv",
+        domtblout="results/domains/phase4c_rescue_queries.pfam.domtblout"
+    output:
+        "results/rescue/phase4c_rescue_domain_integrity.tsv"
+    shell:
+        "python -m greenland_shark_longevity.hmmer_pfam parse "
+        "--config {input.config:q} "
+        "--domain-targets {input.targets:q} "
+        "--domtblout {input.domtblout:q} "
+        "--output {output:q}"
+
+
+rule phase4c_locus_review:
+    input:
+        config="config/config.yaml",
+        alignment_hits="results/rescue/phase4b_genome_alignment_hits.tsv",
+        raw_gff="results/rescue/phase4b_miniprot_raw.gff",
+        domain_integrity="results/rescue/phase4c_rescue_domain_integrity.tsv",
+        target_regions="results/rescue/phase4b_target_regions.tsv"
+    output:
+        locus_review="results/rescue/phase4c_locus_review.tsv",
+        summary="results/rescue/phase4c_gene_review_summary.tsv"
+    shell:
+        "python -m greenland_shark_longevity.phase4c_locus_review review-loci "
+        "--config {input.config:q} "
+        "--alignment-hits {input.alignment_hits:q} "
+        "--raw-gff {input.raw_gff:q} "
+        "--domain-integrity {input.domain_integrity:q} "
+        "--target-regions {input.target_regions:q} "
+        "--locus-output {output.locus_review:q} "
+        "--summary-output {output.summary:q}"
+
+
+rule phase4c_tp53_genome_search:
+    input:
+        config="config/config.yaml",
+        query_table="data/interim/annotation_rescue/phase4b_miniprot_queries.tsv",
+        query_fasta="data/interim/annotation_rescue/phase4b_miniprot_queries.faa"
+    output:
+        query="data/interim/annotation_rescue/tp53_genome_search_query.faa",
+        chunk_plan="results/rescue/tp53_miniprot_chunk_plan.tsv",
+        raw_gff="results/rescue/tp53_miniprot_raw.gff",
+        stderr_log="results/rescue/tp53_miniprot.stderr.log",
+        alignment_hits="results/rescue/tp53_genome_alignment_hits.tsv",
+        summary="results/rescue/tp53_genome_search_summary.tsv"
+    threads:
+        config.get("phase4c_locus_review", {}).get("threads", 1)
+    shell:
+        "python -m greenland_shark_longevity.phase4c_locus_review tp53-search "
+        "--config {input.config:q} "
+        "--query-table {input.query_table:q} "
+        "--query-fasta {input.query_fasta:q} "
+        "--query-output {output.query:q} "
+        "--chunk-plan-output {output.chunk_plan:q} "
+        "--raw-gff-output {output.raw_gff:q} "
+        "--stderr-log-output {output.stderr_log:q} "
+        "--alignment-hits-output {output.alignment_hits:q} "
+        "--summary-output {output.summary:q}"
+
+
+rule phase4c_tp53_targeted_forward_search:
+    input:
+        config="config/config.yaml",
+        reciprocal_hits="results/rescue/phase4_reciprocal_hits.tsv",
+        query_table="data/interim/annotation_rescue/phase4b_miniprot_queries.tsv",
+        query_fasta="data/interim/annotation_rescue/phase4b_miniprot_queries.faa"
+    output:
+        query="data/interim/annotation_rescue/tp53_targeted_forward_query.faa",
+        target_fasta="data/interim/annotation_rescue/tp53_forward_hit_target_scaffolds.fna",
+        target_regions="results/rescue/tp53_forward_hit_target_regions.tsv",
+        raw_gff="results/rescue/tp53_targeted_forward_miniprot_raw.gff",
+        stderr_log="results/rescue/tp53_targeted_forward_miniprot.stderr.log",
+        alignment_hits="results/rescue/tp53_targeted_forward_alignment_hits.tsv",
+        summary="results/rescue/tp53_targeted_forward_search_summary.tsv"
+    threads:
+        config.get("phase4c_locus_review", {}).get("threads", 1)
+    shell:
+        "python -m greenland_shark_longevity.phase4c_locus_review tp53-targeted-forward-search "
+        "--config {input.config:q} "
+        "--reciprocal-hits {input.reciprocal_hits:q} "
+        "--query-table {input.query_table:q} "
+        "--query-fasta {input.query_fasta:q} "
+        "--query-output {output.query:q} "
+        "--target-fasta-output {output.target_fasta:q} "
+        "--target-regions-output {output.target_regions:q} "
+        "--raw-gff-output {output.raw_gff:q} "
+        "--stderr-log-output {output.stderr_log:q} "
+        "--alignment-hits-output {output.alignment_hits:q} "
+        "--summary-output {output.summary:q}"
+
+
+rule preliminary_report:
+    input:
+        data_manifest="data/metadata/data_manifest.tsv",
+        species_manifest="data/metadata/species_manifest.tsv",
+        assembly_qc="results/qc/assembly_qc.tsv",
+        protein_qc="results/qc/protein_qc.tsv",
+        evidence="results/evidence/integrated_evidence.tsv"
+    output:
+        "reports/generated/preliminary_report.md"
+    shell:
+        "python -m greenland_shark_longevity.report "
+        "--data-manifest {input.data_manifest} "
+        "--species-manifest {input.species_manifest} "
+        "--assembly-qc {input.assembly_qc} "
+        "--protein-qc {input.protein_qc} "
+        "--evidence {input.evidence} "
+        "--output {output}"
+
+
+rule reference_file_intake:
+    input:
+        "config/config.yaml"
+    output:
+        "data/metadata/reference_file_inventory.tsv"
+    shell:
+        "python -m greenland_shark_longevity.reference_intake download --config {input} --inventory-output {output}"
+
+
+rule figshare_annotation_inventory:
+    input:
+        "data/raw/references/SMIC_TOKYO_GENOME_2025/figshare_annotation"
+    output:
+        "data/metadata/figshare_annotation_inventory.tsv"
+    shell:
+        "python -m greenland_shark_longevity.local_file_inventory "
+        "--input-dir {input} "
+        "--resource-id SMIC_TOKYO_GENOME_2025 "
+        "--source-id PNAS_YANG_2026_FIGSHARE_ANNOTATION "
+        "--output {output}"
+
+
+rule reference_qc:
+    input:
+        config="config/config.yaml",
+        inventory="data/metadata/reference_file_inventory.tsv"
+    output:
+        assembly="results/qc/reference_assembly_qc.tsv",
+        annotation="results/qc/reference_annotation_qc.tsv",
+        protein="results/qc/reference_protein_qc.tsv"
+    shell:
+        "python -m greenland_shark_longevity.reference_intake qc "
+        "--config {input.config} "
+        "--inventory {input.inventory} "
+        "--output-dir results/qc"
+
+
+rule publication_claim_audit:
+    input:
+        claims="config/publication_claims.yaml",
+        inventory="data/metadata/reference_file_inventory.tsv"
+    output:
+        "results/claims/publication_claim_audit.tsv"
+    shell:
+        "python -m greenland_shark_longevity.publication_claims "
+        "--claims {input.claims} "
+        "--reference-inventory {input.inventory} "
+        "--output {output}"
+
+
+rule phase3_input_readiness:
+    input:
+        config="config/config.yaml",
+        inventory="data/metadata/reference_file_inventory.tsv",
+        protein_qc="results/qc/reference_protein_qc.tsv"
+    output:
+        source_checks="results/readiness/phase3_source_checks.tsv",
+        gene_coordinates="results/orthology/reference_gene_coordinates.tsv",
+        orthofinder_input="results/orthology/orthofinder_input_manifest.tsv"
+    shell:
+        "python -m greenland_shark_longevity.phase3_inputs "
+        "--config {input.config} "
+        "--inventory {input.inventory} "
+        "--protein-qc {input.protein_qc} "
+        "--source-checks-output {output.source_checks} "
+        "--gene-coordinates-output {output.gene_coordinates} "
+        "--orthofinder-input-output {output.orthofinder_input} "
+        "--copy-orthofinder-inputs"
+
+
+rule orthofinder_preflight:
+    input:
+        config="config/config.yaml",
+        manifest="results/orthology/orthofinder_input_manifest.tsv"
+    output:
+        "results/orthology/orthofinder_preflight.tsv"
+    shell:
+        "python -m greenland_shark_longevity.orthofinder_workflow preflight "
+        "--config {input.config} "
+        "--manifest {input.manifest} "
+        "--output {output}"
+
+
+if mode == "orthology":
+    rule orthofinder_run:
+        input:
+            config="config/config.yaml",
+            manifest="results/orthology/orthofinder_input_manifest.tsv",
+            preflight="results/orthology/orthofinder_preflight.tsv"
+        output:
+            "results/orthofinder/.orthofinder_complete.txt"
+        threads:
+            config.get("orthofinder", {}).get("threads", 4)
+        shell:
+            "python -m greenland_shark_longevity.orthofinder_workflow run "
+            "--config {input.config} "
+            "--manifest {input.manifest} "
+            "--marker-output {output}"
+
+
+    rule orthofinder_parse:
+        input:
+            marker="results/orthofinder/.orthofinder_complete.txt",
+            manifest="results/orthology/orthofinder_input_manifest.tsv"
+        output:
+            gene_counts="results/orthology/orthogroup_gene_counts_long.tsv",
+            species_summary="results/orthology/orthofinder_species_summary.tsv"
+        shell:
+            "python -m greenland_shark_longevity.orthofinder_workflow parse "
+            "--results-dir results/orthofinder "
+            "--manifest {input.manifest} "
+            "--gene-count-output {output.gene_counts} "
+            "--species-summary-output {output.species_summary}"
+
+
+rule full_not_implemented:
+    output:
+        "results/full/not_implemented.txt"
+    shell:
+        "python -m greenland_shark_longevity.modes fail-full"

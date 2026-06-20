@@ -1,0 +1,31 @@
+* text=auto
+
+# Keep code, workflow files, configs, docs, and scientific tabular/FASTA
+# fixtures stable across Windows, Linux, Docker, and WSL.
+*.py text eol=lf
+*.sh text eol=lf
+Snakefile text eol=lf
+*.md text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.toml text eol=lf
+*.tsv text eol=lf
+*.fa text eol=lf
+*.faa text eol=lf
+*.fna text eol=lf
+*.fasta text eol=lf
+*.gff text eol=lf
+*.gtf text eol=lf
+
+# Windows launchers are intentionally Windows-native.
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary/report assets should not be line-ending normalized.
+*.svg text eol=lf
+*.gz binary
+*.zip binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.pdf binary

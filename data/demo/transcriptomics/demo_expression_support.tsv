@@ -1,0 +1,5 @@
+gene_symbol	species_id	tissue	resource_id	evidence_status	notes
+TP53	smic	retina	DEMO_ONLY_NOT_BIOLOGICAL_EVIDENCE	DETECTED	Demo-only expression support placeholder.
+ERCC1	smic	retina	DEMO_ONLY_NOT_BIOLOGICAL_EVIDENCE	DETECTED	Demo-only expression support placeholder.
+ERCC4	smic	retina	DEMO_ONLY_NOT_BIOLOGICAL_EVIDENCE	NOT_ASSESSED	Demo-only expression support placeholder.
+

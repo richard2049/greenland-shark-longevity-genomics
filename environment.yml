@@ -1,0 +1,13 @@
+name: green_shark
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python>=3.11,<3.13
+  - snakemake-minimal>=8
+  - pyyaml>=6
+  - pytest>=8
+  - pip
+  - pip:
+      - pyhmmer>=0.12
+      - -e .

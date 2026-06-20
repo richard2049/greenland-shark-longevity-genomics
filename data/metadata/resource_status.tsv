@@ -1,0 +1,8 @@
+resource_id	expected_files	local_path	status	checked_at	message
+SMIC_FLI_GENOME_2025	genome_fasta;annotation_genbank;assembly_stats;assembly_report;feature_count;md5checksums;protein_fasta_NOT_AVAILABLE;annotation_gff_NOT_AVAILABLE	data/raw/references/SMIC_FLI_GENOME_2025	LOCAL_AVAILABLE	2026-06-20T12:51:15.893308+00:00	Expected local file found.
+SMIC_TOKYO_GENOME_2025	genome_fasta;annotation_genbank;assembly_stats;assembly_report;feature_count;md5checksums;protein_fasta_NOT_AVAILABLE;annotation_gff_NOT_AVAILABLE	data/raw/references/SMIC_TOKYO_GENOME_2025	LOCAL_AVAILABLE	2026-06-20T12:51:15.893308+00:00	Expected local file found.
+SMIC_RETINA_PRJNA1246101_2026	sra_reads_NOT_DOWNLOADED;coding_sequence_fasta;cds_translation_protein_fasta	data/raw/references/SMIC_RETINA_PRJNA1246101_2026	LOCAL_AVAILABLE	2026-06-20T12:51:15.893308+00:00	Expected local file found.
+CMIL_REFSEQ_2021	protein_fasta	data/raw/references/CMIL_REFSEQ_2021	LOCAL_AVAILABLE	2026-06-20T12:51:15.893308+00:00	Expected local file found.
+SCAN_REFSEQ_2026	protein_fasta	data/raw/references/SCAN_REFSEQ_2026	LOCAL_AVAILABLE	2026-06-20T12:51:15.893308+00:00	Expected local file found.
+ARAD_REFSEQ_2026	protein_fasta	data/raw/references/ARAD_REFSEQ_2026	LOCAL_AVAILABLE	2026-06-20T12:51:15.893308+00:00	Expected local file found.
+RTYP_REFSEQ_2022	protein_fasta	data/raw/references/RTYP_REFSEQ_2022	LOCAL_AVAILABLE	2026-06-20T12:51:15.893308+00:00	Expected local file found.

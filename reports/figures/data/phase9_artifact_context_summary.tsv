@@ -1,0 +1,6 @@
+category	count	source	interpretation
+artifact_risk_high	13	phase8b_tier_audit.tsv:artifact_risk_level	High artifact risk rows require row-level review before biological wording.
+artifact_risk_moderate	6	phase8b_tier_audit.tsv:artifact_risk_level	Moderate artifact risk rows remain plausible only when validation caveats are retained.
+repeat_context_caveat	3	phase8b_mechanism_summary.tsv:repeat_context_caveat_count	Repeat context is artifact/context evidence only.
+locus_review_required	4	phase8b_mechanism_summary.tsv:locus_review_required_count	Locus review is required before duplication or paralog-specific wording.
+retina_expression_supported	27	phase8b_mechanism_summary.tsv:expression_supported_count	Expression support is retina-specific and not a pathway-state result.

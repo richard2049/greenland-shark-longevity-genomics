@@ -1,0 +1,6 @@
+gene_id	gene_symbol	species_id	resource_id	scaffold	start	end	strand	locus_id	isoform_group
+demo_SMIC_TP53_1	TP53	smic	DEMO_ONLY_NOT_BIOLOGICAL_EVIDENCE	demo_scaffold_1	1	180	+	locus_tp53_a	iso_tp53_a
+demo_SMIC_TP53_2	TP53	smic	DEMO_ONLY_NOT_BIOLOGICAL_EVIDENCE	demo_scaffold_2	5	170	-	locus_tp53_b	iso_tp53_b
+demo_SMIC_ERCC1_1	ERCC1	smic	DEMO_ONLY_NOT_BIOLOGICAL_EVIDENCE	demo_scaffold_1	220	420	+	locus_ercc1_a	iso_ercc1_a
+demo_SMIC_ERCC4_frag	ERCC4	smic	DEMO_ONLY_NOT_BIOLOGICAL_EVIDENCE	demo_scaffold_3	1	45	+	locus_ercc4_frag	iso_ercc4_frag
+
